@@ -54,7 +54,7 @@ function populateSelects() {
   });
 
   // Inner catheter selects (micros + DACs + thrombectomy)
-  const microSelects = ['micro-1', 'micro-2', 'micro-3', 'detail-micro'];
+  const microSelects = ['micro-1', 'micro-2', 'micro-3', 'detail-micro', 'detail-micro-2'];
   const innerGroups = [
     { label: 'Microcatheters',         list: data.microCatheters, key: 'microCatheters' },
     { label: 'DAC Catheters',          list: data.dacCatheters, key: 'dacCatheters' },
@@ -421,7 +421,7 @@ function clearSlot(n) {
 }
 
 /* ─── LUMEN VISUALIZATION ────────────────────────────────────────────────────── */
-function renderLumenViz(access, micro) {
+function renderLumenViz(access, micro, micro2 = null) {
   const SIZE    = 200;
   const C       = SIZE / 2; // center = 100
   const MAX_R   = 88;       // max radius in SVG units
@@ -430,6 +430,94 @@ function renderLumenViz(access, micro) {
 
   const accessOdR = (access.odMm ? (access.odMm / 2) : (access.proxOdMm || access.shaftOdMm || 0) / 2) * SCALE;
   const accessIdR = ((access.idMm || access.shaftOdMm || 0) / 2) * SCALE;
+
+  if (micro2) {
+    // ── Dual micro layout ──────────────────────────────────────────────────
+    // Place two circles side-by-side, tangent, with their combined bounding
+    // box centred on C.  Bounding radius = r1 + r2, so clearance in mm is:
+    //   access.idMm - (micro1.proxOdMm + micro2.proxOdMm)
+    const r1   = (micro.proxOdMm  / 2) * SCALE;
+    const r1Id = (micro.idMm      / 2) * SCALE;
+    const r2   = (micro2.proxOdMm / 2) * SCALE;
+    const r2Id = (micro2.idMm     / 2) * SCALE;
+
+    // Centers: c1 = C − r2,  c2 = C + r1  (they touch at C + (r1−r2))
+    const c1x = C - r2;
+    const c2x = C + r1;
+
+    const clearance = access.idMm - micro.proxOdMm - micro2.proxOdMm;
+    const cls       = compatClass(clearance);
+    const gapColor  = cls === 'green' ? '#10b981' : cls === 'amber' ? '#f59e0b' : '#ef4444';
+
+    const COLOR1 = '#10b981'; // teal  — micro 1
+    const COLOR2 = '#818cf8'; // indigo — micro 2
+
+    return `
+    <div class="lumen-viz-wrapper">
+      <div class="lumen-viz-label">Cross-section view</div>
+      <svg class="lumen-viz" viewBox="0 0 ${SIZE} ${SIZE}" xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-label="Lumen cross-section: ${access.name} with ${micro.name} and ${micro2.name}">
+
+        <!-- Outer ambient glow -->
+        <circle cx="${C}" cy="${C}" r="${accessOdR + 10}"
+                fill="none" stroke="${gapColor}" stroke-width="1" opacity="0.06"/>
+
+        <!-- Access catheter wall (OD) -->
+        <circle cx="${C}" cy="${C}" r="${accessOdR}"
+                fill="#1a2236" stroke="#1e3a5f" stroke-width="1.5"/>
+
+        <!-- Lumen space (access ID) — gap fill coloured by combined clearance -->
+        <circle cx="${C}" cy="${C}" r="${accessIdR}"
+                fill="${gapColor}" fill-opacity="0.18"/>
+
+        <!-- Micro 1 outer -->
+        <circle cx="${c1x}" cy="${C}" r="${r1}"
+                fill="${COLOR1}" fill-opacity="0.60"
+                stroke="${COLOR1}" stroke-width="1.5"/>
+
+        <!-- Micro 1 inner lumen -->
+        <circle cx="${c1x}" cy="${C}" r="${r1Id}"
+                fill="#090d14" fill-opacity="0.7"/>
+
+        <!-- Micro 2 outer -->
+        <circle cx="${c2x}" cy="${C}" r="${r2}"
+                fill="${COLOR2}" fill-opacity="0.60"
+                stroke="${COLOR2}" stroke-width="1.5"/>
+
+        <!-- Micro 2 inner lumen -->
+        <circle cx="${c2x}" cy="${C}" r="${r2Id}"
+                fill="#090d14" fill-opacity="0.7"/>
+
+        <!-- Access ID dashed boundary ring -->
+        <circle cx="${C}" cy="${C}" r="${accessIdR}"
+                fill="none" stroke="#0ea5e9" stroke-width="1"
+                stroke-dasharray="4 3" opacity="0.45"/>
+      </svg>
+
+      <div class="lumen-viz-dims">
+        <div class="dim-item">
+          <span class="dim-swatch" style="border: 2px dashed #0ea5e9; opacity: 0.6;"></span>
+          <span class="dim-key">Access ID</span>
+          <span class="dim-val">${access.idMm.toFixed(2)}</span>
+          <span class="dim-unit">mm</span>
+        </div>
+        <div class="dim-item">
+          <span class="dim-swatch" style="background: ${COLOR1}; opacity: 0.65;"></span>
+          <span class="dim-key">Micro 1 OD</span>
+          <span class="dim-val">${micro.proxOdMm.toFixed(2)}</span>
+          <span class="dim-unit">mm</span>
+        </div>
+        <div class="dim-item">
+          <span class="dim-swatch" style="background: ${COLOR2}; opacity: 0.65;"></span>
+          <span class="dim-key">Micro 2 OD</span>
+          <span class="dim-val">${micro2.proxOdMm.toFixed(2)}</span>
+          <span class="dim-unit">mm</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Single micro layout (original) ──────────────────────────────────────
   const microR    = (micro.proxOdMm / 2) * SCALE;
   const microIdR  = (micro.idMm / 2) * SCALE;
 
@@ -497,11 +585,12 @@ function renderLumenViz(access, micro) {
 
 /* ─── DETAIL VIEW ────────────────────────────────────────────────────────────── */
 function updateDetailView() {
-  const accessVal = document.getElementById('detail-access').value;
-  const microVal  = document.getElementById('detail-micro').value;
+  const accessVal  = document.getElementById('detail-access').value;
+  const microVal   = document.getElementById('detail-micro').value;
+  const microVal2  = document.getElementById('detail-micro-2').value;
   const el = document.getElementById('detail-result');
 
-  if (!accessVal && !microVal) {
+  if (!accessVal && !microVal && !microVal2) {
     el.innerHTML = '';
     return;
   }
@@ -520,12 +609,14 @@ function updateDetailView() {
 
   const allInner = [...data.microCatheters, ...data.dacCatheters, ...data.thrombectomyCatheters];
   const micro  = microName ? allInner.find(c => c.name === microName) : null;
+  const [, microName2] = microVal2 ? microVal2.split(':') : ['', ''];
+  const micro2 = microName2 ? allInner.find(c => c.name === microName2) : null;
 
   let html = '';
 
-  // Lumen visualization — only when both are selected
+  // Lumen visualization — only when both access and at least one micro are selected
   if (access && micro) {
-    html += renderLumenViz(access, micro);
+    html += renderLumenViz(access, micro, micro2 || null);
   }
 
   // Access catheter specs (or balloon guide)
@@ -555,7 +646,7 @@ function updateDetailView() {
       </div>`;
   }
 
-  // Microcatheter specs
+  // Inner catheter specs
   if (micro) {
     html += `
       <div class="section" style="margin-top:16px">
@@ -578,18 +669,45 @@ function updateDetailView() {
       </div>`;
   }
 
-  // Compatibility banner — only when both selected
+  if (micro2) {
+    html += `
+      <div class="section" style="margin-top:16px">
+        <div class="section-label">${micro2.name} · ${micro2.company}</div>
+        <div class="spec-grid">
+          <div class="spec-cell primary">
+            <div class="spec-label">Proximal OD</div>
+            <div class="spec-val">${micro2.proxOdMm.toFixed(2)}<span class="spec-unit">mm</span></div>
+          </div>
+          <div class="spec-cell">
+            <div class="spec-label">Distal OD</div>
+            <div class="spec-val">${micro2.distOdMm != null ? micro2.distOdMm.toFixed(2) : '—'}<span class="spec-unit">${micro2.distOdMm != null ? 'mm' : ''}</span></div>
+          </div>
+          <div class="spec-cell">
+            <div class="spec-label">Inner Diameter</div>
+            <div class="spec-val">${micro2.idMm.toFixed(2)}<span class="spec-unit">mm</span></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // Compatibility banner — only when both access and micro are selected
   if (access && micro) {
-    const clearance = (access.idMm || access.shaftOdMm || 0) - micro.proxOdMm;
+    const accessId = access.idMm || access.shaftOdMm || 0;
+    const clearance = micro2
+      ? accessId - micro.proxOdMm - micro2.proxOdMm
+      : accessId - micro.proxOdMm;
     const cls = compatClass(clearance);
     const lbl = compatLabel(clearance);
     const sign = clearance >= 0 ? '+' : '';
+    const subtitle = micro2
+      ? `Combined OD ${(micro.proxOdMm + micro2.proxOdMm).toFixed(2)} mm · ${lbl.sub}`
+      : lbl.sub;
     html += `
       <div class="compat-banner ${cls}">
         <div class="compat-icon">${lbl.icon}</div>
         <div>
           <div class="compat-title">${lbl.text} — clearance ${sign}${clearance.toFixed(2)} mm</div>
-          <div class="compat-sub">${lbl.sub}</div>
+          <div class="compat-sub">${subtitle}</div>
         </div>
       </div>`;
   }
@@ -616,6 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Detail view selects
   document.getElementById('detail-access').addEventListener('change', updateDetailView);
   document.getElementById('detail-micro').addEventListener('change', updateDetailView);
+  document.getElementById('detail-micro-2').addEventListener('change', updateDetailView);
 
   // Reference tab filter pills
   document.querySelectorAll('.filter-pill').forEach(btn => {
