@@ -23,7 +23,7 @@ const data = {
     { name: "RED 72 Kit",        company: "Penumbra",  fr: "6F", proxOdMm: 2.16, distOdMm: 1.83, idMm: 1.83, idInch: 0.072, lengthCm: 132 },
     { name: "RED 78 Kit",        company: "Penumbra",  proxOdMm: 2.39, distOdMm: 1.98, idMm: 1.98, idInch: 0.078, lengthCm: 132 },
     { name: "Sofia Flow 88",     company: "MicroVention", fr: "8F", proxOdMm: 2.59, distOdMm: 2.70, idMm: 2.24, idInch: 0.088, lengthCm: 115 },
-    { name: "Raptor 071",        company: "Balt",          fr: "6F", proxOdMm: 2.11, odMm: 2.11, idMm: 1.80, idInch: 0.071, lengthCm: 132 },
+    { name: "Raptor 071",        company: "Balt",          fr: "6F", proxOdMm: 2.11, idMm: 1.80, idInch: 0.071, lengthCm: 132 },
   ],
 
   dacCatheters: [
