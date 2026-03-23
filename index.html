@@ -116,13 +116,13 @@
   <div id="tab-fast" role="tabpanel" aria-labelledby="fast-tab">
 
     <div class="section" style="margin-top:20px">
-      <div class="section-label">Microcatheters (select up to 3)</div>
+      <div class="section-label">Inner Catheters (select up to 3)</div>
       <div class="micro-slots">
 
         <div class="micro-slot" id="slot-1">
           <div class="slot-badge" aria-hidden="true">01</div>
-          <select id="micro-1" aria-label="Microcatheter slot 1">
-            <option value="">— Select microcatheter —</option>
+          <select id="micro-1" aria-label="Inner catheter slot 1">
+            <option value="">— Select inner catheter —</option>
           </select>
           <div class="slot-od hidden" id="slot-od-1" aria-hidden="true"></div>
           <button class="slot-clear hidden" id="slot-clear-1" aria-label="Clear slot 1">
@@ -186,6 +186,13 @@
       <div class="section-label">Inner Catheter</div>
       <select id="detail-micro" aria-label="Select inner catheter">
         <option value="">— Select inner catheter —</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">2nd Inner Catheter <span style="color:var(--muted);font-weight:400">(optional)</span></div>
+      <select id="detail-micro-2" aria-label="Select second inner catheter (optional)">
+        <option value="">— Optional —</option>
       </select>
     </div>
 
