@@ -62,6 +62,7 @@ function populateSelects() {
   ];
   microSelects.forEach(id => {
     const el = document.getElementById(id);
+    if (!el) return;
     innerGroups.forEach(({ label, list, key }) => {
       if (!list || !list.length) return;
       const grp = document.createElement('optgroup');

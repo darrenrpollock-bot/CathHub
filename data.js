@@ -9,17 +9,17 @@ const data = {
     { name: "Infinity ASX",      company: "Stryker",   fr: "8F",  odMm: 2.64, idMm: 2.23, idInch: 0.088 },
     { name: "Neuron MAX 088",    company: "Penumbra",  fr: "8F",  odMm: 2.64, idMm: 2.23, idInch: 0.088 },
     { name: "Balt Ballast",      company: "Balt",      fr: "8F",  odMm: 2.64, idMm: 2.23, idInch: 0.088 },
-    { name: "BENCHMARK BMX81",   company: "Penumbra",  fr: "7F",  odMm: 2.46, idMm: 2.06, idInch: 0.081 },
+    { name: "BENCHMARK BMX81",   company: "Penumbra",  fr: "7F",  odMm: 2.46, idMm: 2.06, idInch: 0.081, lengthCm: 115 },
     { name: "BMX96",             company: "Microvention", fr: "8F", odMm: 2.64, idMm: 2.44, idInch: 0.096 },
-    { name: "Zebra 087",         company: "Q'Apel Medical", fr: "7F", proxOdMm: 2.44, distOdMm: 2.21, idMm: 2.11, idInch: 0.083, lengthCm: 105 },
+    { name: "Zebra 087",         company: "Q'Apel Medical", fr: "7F", proxOdMm: 2.44, distOdMm: 2.11, idMm: 2.21, idInch: 0.087, lengthCm: 105 },
     { name: "Armadillo",           company: "Q'Apel Medical", fr: "7F", idMm: 1.83, idInch: 0.072, lengthCm: 105, notes: "27cm distal segment; femoral access system kit" },
     { name: "Asahi Fubuki 7F",    company: "Asahi Intecc",    fr: "7F",  odMm: 2.40, idMm: 2.05, idInch: 0.081, lengthCm: 100, tipShape: "Straight" },
-    { name: "088 Access System",  company: "Route 92 Medical", fr: "8F", proxOdMm: 2.70, distOdMm: 1.60, idMm: 2.10, idInch: 0.080, lengthCm: 143, notes: "Includes Tenzing 8 inner (OD 0.8mm, tip 0.5mm, 151cm)" },
+    { name: "088 Access System",  company: "Route 92 Medical", fr: "8F", proxOdMm: 2.70, distOdMm: 1.60, idMm: 2.24, idInch: 0.088, lengthCm: 143, notes: "Includes Tenzing 8 inner (OD 0.8mm, tip 0.5mm, 151cm)" },
     { name: "Base Camp 2.0 90cm", company: "Route 92 Medical", fr: "8F", proxOdMm: 2.69, distOdMm: 2.69, idMm: 3.10, idInch: 0.122, lengthCm: 90, notes: "Sheath system; includes 113cm Berenstein inner catheter (proxOD 2.64mm, distOD 1.0mm)" },
   ],
 
   thrombectomyCatheters: [
-    { name: "RED 43",            company: "Penumbra",  proxOdMm: 1.52, distOdMm: 1.09, idMm: 1.09, idInch: 0.043 },
+    { name: "RED 43",            company: "Penumbra",  proxOdMm: 1.52, distOdMm: 1.09, idMm: 1.09, idInch: 0.043, lengthCm: 160 },
     { name: "RED 72 Kit",        company: "Penumbra",  fr: "6F", proxOdMm: 2.16, distOdMm: 1.83, idMm: 1.83, idInch: 0.072, lengthCm: 132 },
     { name: "RED 78 Kit",        company: "Penumbra",  proxOdMm: 2.39, distOdMm: 1.98, idMm: 1.98, idInch: 0.078, lengthCm: 132 },
     { name: "Sofia Flow 88",     company: "MicroVention", fr: "8F", proxOdMm: 2.59, distOdMm: 2.70, idMm: 2.24, idInch: 0.088, lengthCm: 115 },
@@ -27,10 +27,10 @@ const data = {
   ],
 
   dacCatheters: [
-    { name: "Phenom Plus",       company: "Medtronic", proxOdMm: 1.55, distOdMm: 1.40, idMm: 1.13, idInch: 0.045 },
-    { name: "MIDWAY 43",         company: "Penumbra",  proxOdMm: 1.52, distOdMm: null, idMm: 1.09, idInch: 0.043 },
-    { name: "AXS Vecta 46",      company: "Stryker",   proxOdMm: 1.48, distOdMm: 1.43, idMm: 1.17, idInch: 0.046 },
-    { name: "MIDWAY 62",         company: "Penumbra",  proxOdMm: 1.93, distOdMm: null, idMm: 1.57, idInch: 0.062 },
+    { name: "Phenom Plus",       company: "Medtronic", proxOdMm: 1.55, distOdMm: 1.40, idMm: 1.13, idInch: 0.045, lengthCm: 120 },
+    { name: "MIDWAY 43",         company: "Penumbra",  proxOdMm: 1.52, distOdMm: null, idMm: 1.09, idInch: 0.043, lengthCm: 115 },
+    { name: "AXS Vecta 46",      company: "Stryker",   proxOdMm: 1.48, distOdMm: 1.43, idMm: 1.17, idInch: 0.046, lengthCm: 146 },
+    { name: "MIDWAY 62",         company: "Penumbra",  proxOdMm: 1.93, distOdMm: null, idMm: 1.57, idInch: 0.062, lengthCm: 115 },
     { name: "AXS Offset",        company: "Stryker",      proxOdMm: 1.00, distOdMm: 0.91, idMm: 1.30, idInch: 0.050, lengthCm: 150, notes: "Distal 2cm tip ID 0.021in/0.53mm; Delivery Assist Catheter" },
     { name: "Sofia DAC 125cm",   company: "MicroVention", fr: "5F", proxOdMm: 1.70, distOdMm: 1.70, idMm: 1.40, idInch: 0.055, lengthCm: 125, tipShape: "Straight" },
     { name: "AXS Catalyst 5",    company: "Stryker",      proxOdMm: 1.86, distOdMm: 1.76, idMm: 1.47, idInch: 0.058, lengthCm: 132 },
@@ -38,7 +38,7 @@ const data = {
     { name: "Sofia EX",          company: "MicroVention", fr: "5F", proxOdMm: 1.70, distOdMm: 1.80, idMm: 1.47, idInch: 0.058, lengthCm: 115, tipShape: "Straight" },
     { name: "FreeClimb 54",      company: "Route 92 Medical", proxOdMm: 1.70, distOdMm: 1.20, idMm: 1.37, idInch: 0.054, lengthCm: 148, notes: "Kit includes Tenzing 5 inner support (OD 0.8mm, tip 0.4mm, 167cm)" },
     { name: "FreeClimb 70",      company: "Route 92 Medical", proxOdMm: 2.10, distOdMm: 1.60, idMm: 1.78, idInch: 0.070, lengthCm: 132, notes: "Kit includes Tenzing 7 inner support (OD 0.8mm, tip 0.5mm, 151cm)" },
-    { name: "FreeClimb 88",      company: "Route 92 Medical", proxOdMm: 2.60, distOdMm: 1.60, idMm: 2.10, idInch: 0.080, lengthCm: 125, notes: "Kit includes Tenzing 8 inner support (OD 0.8mm, tip 0.5mm, 151cm)" },
+    { name: "FreeClimb 88",      company: "Route 92 Medical", proxOdMm: 2.60, distOdMm: 1.60, idMm: 2.24, idInch: 0.088, lengthCm: 125, notes: "Kit includes Tenzing 8 inner support (OD 0.8mm, tip 0.5mm, 151cm)" },
   ],
 
   balloonGuideCatheters: [
@@ -58,10 +58,10 @@ const data = {
     { name: "Lantern",           company: "Penumbra",     proxOdMm: 0.97, distOdMm: 0.86, idMm: 0.63 },
     { name: "Headway 27",        company: "Microvention", proxOdMm: 1.02, distOdMm: 0.86, idMm: 0.69 },
     { name: "Neuroslider 27",    company: "Balt",         proxOdMm: 1.02, distOdMm: 0.99, idMm: 0.69 },
-    { name: "Trevo Trak 21",     company: "Stryker",      proxOdMm: 0.79, distOdMm: 0.89, idMm: 0.53, idInch: 0.021, lengthCm: 162 },
+    { name: "Trevo Trak 21",     company: "Stryker",      proxOdMm: 0.89, distOdMm: 0.79, idMm: 0.53, idInch: 0.021, lengthCm: 162 },
     { name: "Velocity STR",      company: "Penumbra",     proxOdMm: 0.98, distOdMm: 0.87, idMm: 0.64, idInch: 0.025, lengthCm: 160, tipShape: "Straight" },
-    { name: "Phenom 17",         company: "Medtronic",    proxOdMm: 0.74, distOdMm: 0.43, idMm: 0.43, idInch: 0.017, lengthCm: 150 },
-    { name: "Phenom 21",         company: "Medtronic",    proxOdMm: 0.86, distOdMm: 0.53, idMm: 0.53, idInch: 0.021, lengthCm: 160 },
-    { name: "Phenom 27",         company: "Medtronic",    proxOdMm: 1.02, distOdMm: 0.69, idMm: 0.69, idInch: 0.027, lengthCm: 150 },
+    { name: "Phenom 17",         company: "Medtronic",    proxOdMm: 0.74, distOdMm: 0.61, idMm: 0.43, idInch: 0.017, lengthCm: 150 },
+    { name: "Phenom 21",         company: "Medtronic",    proxOdMm: 0.86, distOdMm: 0.76, idMm: 0.53, idInch: 0.021, lengthCm: 160 },
+    { name: "Phenom 27",         company: "Medtronic",    proxOdMm: 1.02, distOdMm: 0.91, idMm: 0.69, idInch: 0.027, lengthCm: 150 },
   ]
 };
