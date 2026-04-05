@@ -171,13 +171,15 @@ function renderAllCategories() {
     const headers = ['Device', 'Company'];
 
     if (categoryKey === 'accessCatheters') {
-      headers.push('Fr', 'OD (mm)', 'ID (mm)');
+      headers.push('Fr', 'OD (mm)', 'ID (mm)', 'Length (cm)');
     } else if (categoryKey === 'balloonGuideCatheters') {
-      headers.push('Fr', 'Shaft OD (mm)', 'Balloon Max (mm)');
+      headers.push('Fr', 'Shaft OD (mm)', 'Balloon Max (mm)', 'Length (cm)');
+    } else if (categoryKey === 'thrombectomyCatheters') {
+      headers.push('Prox OD (mm)', 'Dist OD (mm)', 'ID (mm)', 'Length (cm)');
+    } else if (categoryKey === 'dacCatheters') {
+      headers.push('Prox OD (mm)', 'ID (mm)', 'Length (cm)');
     } else if (categoryKey === 'microCatheters') {
-      headers.push('Prox OD (mm)', 'Dist OD (mm)', 'ID (mm)');
-    } else {
-      headers.push('Prox OD (mm)', 'ID (mm)');
+      headers.push('Prox OD (mm)', 'Dist OD (mm)', 'ID (mm)', 'Length (cm)');
     }
 
     headers.forEach(h => {
@@ -200,28 +202,43 @@ function renderAllCategories() {
         item.company
       ];
 
+      const lenStr = item.lengthCm
+        ? (Array.isArray(item.lengthCm) ? item.lengthCm.join(' / ') + ' cm' : item.lengthCm + ' cm')
+        : '—';
+
       if (categoryKey === 'accessCatheters') {
         cells.push(
           item.fr || '—',
           item.odMm ? item.odMm.toFixed(2) : (item.proxOdMm || 0).toFixed(2),
-          `<strong>${item.idMm ? item.idMm.toFixed(2) : (item.shaftOdMm || 0).toFixed(2)}</strong>`
+          `<strong>${item.idMm ? item.idMm.toFixed(2) : (item.shaftOdMm || 0).toFixed(2)}</strong>`,
+          lenStr
         );
       } else if (categoryKey === 'balloonGuideCatheters') {
         cells.push(
           item.fr || '—',
           item.shaftOdMm ? item.shaftOdMm.toFixed(2) : '—',
-          item.balloonMaxMm ? item.balloonMaxMm.toFixed(2) : '—'
+          item.balloonMaxMm ? item.balloonMaxMm.toFixed(2) : '—',
+          lenStr
+        );
+      } else if (categoryKey === 'thrombectomyCatheters') {
+        cells.push(
+          `<strong>${item.proxOdMm.toFixed(2)}</strong>`,
+          item.distOdMm != null ? item.distOdMm.toFixed(2) : '—',
+          item.idMm.toFixed(2),
+          lenStr
         );
       } else if (categoryKey === 'microCatheters') {
         cells.push(
           `<strong>${item.proxOdMm.toFixed(2)}</strong>`,
           item.distOdMm != null ? item.distOdMm.toFixed(2) : '—',
-          item.idMm.toFixed(2)
+          item.idMm.toFixed(2),
+          lenStr
         );
       } else {
         cells.push(
           `<strong>${item.proxOdMm.toFixed(2)}</strong>`,
-          item.idMm.toFixed(2)
+          item.idMm.toFixed(2),
+          lenStr
         );
       }
 
@@ -231,7 +248,7 @@ function renderAllCategories() {
         if (i > 1) {
           td.style.textAlign = 'center';
           td.style.fontFeatureSettings = `'tnum' 1`;
-          if (i !== cells.length - 1 && categoryKey !== 'accessCatheters' && categoryKey !== 'balloonGuideCatheters') {
+          if (i !== cells.length - 1 && categoryKey !== 'accessCatheters' && categoryKey !== 'balloonGuideCatheters' && categoryKey !== 'dacCatheters') {
             td.style.color = 'var(--muted)';
           }
         }
