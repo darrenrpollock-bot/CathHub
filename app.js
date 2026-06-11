@@ -454,6 +454,88 @@ function saveStack(inners, accessVal = null) {
   }
 }
 
+/* ─── EXPORT / IMPORT SAVED STACKS ─────────────────────────────────────────────── */
+function exportStacks() {
+  const stacks = loadSavedStacks();
+  if (!stacks.length) {
+    const st = document.getElementById('fast-share-status');
+    if (st) {
+      st.textContent = 'No stacks to export';
+      st.classList.add('show');
+      setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 1400);
+    }
+    return;
+  }
+
+  const dataStr = JSON.stringify(stacks, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cathhub-stacks-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importStacks() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (!Array.isArray(imported)) throw new Error('File is not a valid stacks array');
+
+        let current = loadSavedStacks();
+        let added = 0;
+
+        imported.forEach(s => {
+          if (!s || !s.id || !s.name || !Array.isArray(s.inners)) return;
+
+          // Skip if we already have a stack with the same id
+          if (current.some(c => c.id === s.id)) return;
+
+          current.push(s);
+          added++;
+        });
+
+        if (added > 0) {
+          saveSavedStacks(current);
+          renderSavedStacks();
+
+          const st = document.getElementById('fast-share-status');
+          if (st) {
+            st.textContent = `Imported ${added} stack${added === 1 ? '' : 's'}`;
+            st.classList.add('show');
+            setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 1800);
+          }
+        } else {
+          const st = document.getElementById('fast-share-status');
+          if (st) {
+            st.textContent = 'No new stacks added (duplicates or invalid)';
+            st.classList.add('show');
+            setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 1800);
+          }
+        }
+      } catch (err) {
+        alert('Import failed: ' + (err.message || 'Invalid file'));
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  input.click();
+}
+
 function saveCurrentStack() {
   // Called from Fast Check "Save combo" button — inners only
   const inners = [1,2,3].map(n => {
@@ -1428,6 +1510,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fastSaveBtn) {
     fastSaveBtn.addEventListener('click', saveCurrentStack);
   }
+
+  // Export / Import saved stacks
+  const exportBtn = document.getElementById('export-stacks-btn');
+  if (exportBtn) exportBtn.addEventListener('click', exportStacks);
+
+  const importBtn = document.getElementById('import-stacks-btn');
+  if (importBtn) importBtn.addEventListener('click', importStacks);
 
   // Save full combo from Detail View (access + inners)
   const detailSaveBtn = document.getElementById('detail-save');

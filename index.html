@@ -189,7 +189,14 @@
     </div>
 
     <!-- Saved stacks -->
-    <div id="saved-stacks" class="saved-stacks" style="margin-bottom:8px;"></div>
+    <div id="saved-stacks" class="saved-stacks" style="margin-bottom:4px;"></div>
+
+    <!-- Export / Import for saved stacks + local-only notice -->
+    <div class="saved-controls">
+      <button id="export-stacks-btn" class="action-btn" type="button" style="padding:4px 9px; font-size:11px;">Export</button>
+      <button id="import-stacks-btn" class="action-btn" type="button" style="padding:4px 9px; font-size:11px;">Import</button>
+      <span class="local-only-notice">Saved in this browser only — use Export to back up or transfer to another device</span>
+    </div>
 
     <!-- Custom devices (local only) -->
     <div class="custom-devices" style="margin: 6px 0 12px;">
@@ -197,6 +204,7 @@
         ＋ Add custom inner (local)
       </button>
       <span id="custom-list" class="custom-list"></span>
+      <div style="font-size:9px; color:var(--muted); margin-top:3px; font-style:italic;">Custom devices are also saved only in this browser.</div>
     </div>
 
     <div id="fast-result"></div>
@@ -254,9 +262,9 @@
 
 <!-- ─── FOOTER ──────────────────────────────────────────────────────────────── -->
 <footer>
-  Data sourced from manufacturer specifications. ConnectRx accepts no responsibility for errors or omissions.<br>
+  Data sourced from manufacturer specifications. The authors accept no responsibility for errors or omissions.<br>
   Always verify compatibility with current device IFU before clinical use.<br>
-  <a href="https://connectrx.com.au">connectrx.com.au</a> · v2.0 · <span id="last-updated"></span>
+  v2.0 · <span id="last-updated"></span>
 </footer>
 
 

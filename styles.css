@@ -793,6 +793,28 @@ select:focus {
   white-space: nowrap;
 }
 
+/* Saved stacks export/import controls */
+.saved-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 12px;
+}
+.local-only-notice {
+  font-size: 10px;
+  color: var(--muted);
+  font-style: italic;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+/* Temporarily hidden ConnectRx references and hyperlinks (re-enable by removing these rules) */
+.connectrx-badge,
+.splash-brand {
+  display: none !important;
+}
+
 /* Save stack icon in Fast results table */
 #fast-result .save-stack-btn {
   opacity: 0.6;
