@@ -34,6 +34,461 @@ function compatLabel(clearance) {
   };
 }
 
+/* ─── URL STATE (SHAREABLE LINKS) ────────────────────────────────────────────── */
+function encodeInners(list) {
+  // Use | as separator (names rarely contain it); encode each name
+  return list.map(n => encodeURIComponent(n)).join('|');
+}
+
+function decodeInners(str) {
+  if (!str) return [];
+  return str.split('|').map(s => decodeURIComponent(s)).filter(Boolean);
+}
+
+function getAllInners() {
+  const customs = getCustomDevices();
+  return [...data.microCatheters, ...data.dacCatheters, ...data.thrombectomyCatheters, ...customs];
+}
+
+function getCustomDevices() {
+  try {
+    return JSON.parse(localStorage.getItem('cathhub_custom_devices') || '[]');
+  } catch { return []; }
+}
+
+function saveCustomDevices(list) {
+  localStorage.setItem('cathhub_custom_devices', JSON.stringify(list));
+  // Refresh selects and views so customs appear immediately
+  refreshCustomInSelects();
+}
+
+function refreshCustomInSelects() {
+  // Rebuild all inner selects from scratch to include (or remove) customs
+  const microSelects = ['micro-1', 'micro-2', 'micro-3', 'detail-micro', 'detail-micro-2'];
+  microSelects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Remove old custom optgroup if present
+    const oldGrp = el.querySelector('optgroup[label="Custom (local)"]');
+    if (oldGrp) oldGrp.remove();
+
+    const customs = getCustomDevices();
+    if (!customs.length) return;
+
+    const grp = document.createElement('optgroup');
+    grp.label = 'Custom (local)';
+    customs.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = `customDevices:${c.name}`;
+      opt.textContent = `${c.name}  ·  OD ${c.proxOdMm.toFixed(2)} mm (custom)`;
+      grp.appendChild(opt);
+    });
+    el.appendChild(grp);
+  });
+
+  // Re-render custom list UI
+  renderCustomList();
+}
+
+function renderCustomList() {
+  const el = document.getElementById('custom-list');
+  if (!el) return;
+  const customs = getCustomDevices();
+  if (!customs.length) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = customs.map(c => `
+    <span class="custom-chip" title="${c.company || 'Custom'} — ID ${c.idMm ? c.idMm.toFixed(2) : '—'}">
+      ${c.name}
+      <span class="del" data-name="${c.name}">×</span>
+    </span>
+  `).join('');
+
+  el.querySelectorAll('.del').forEach(d => {
+    d.addEventListener('click', () => {
+      const nm = d.dataset.name;
+      const remaining = getCustomDevices().filter(x => x.name !== nm);
+      saveCustomDevices(remaining);
+      // If any slot currently has this custom selected, clear it
+      [1,2,3,'detail-micro','detail-micro-2'].forEach(key => {
+        const sel = typeof key === 'number' ? document.getElementById(`micro-${key}`) : document.getElementById(key);
+        if (sel && sel.value && sel.value.includes(nm)) {
+          sel.value = '';
+        }
+      });
+      updateFastView();
+      updateDetailView();
+    });
+  });
+}
+
+function addCustomDevice() {
+  const name = prompt('Custom device name (e.g. "My 021 XT")');
+  if (!name) return;
+  const odStr = prompt('Proximal OD in mm (e.g. 0.74)', '0.74');
+  if (!odStr) return;
+  const proxOdMm = parseFloat(odStr);
+  if (isNaN(proxOdMm) || proxOdMm <= 0) {
+    alert('Please enter a valid positive OD in mm.');
+    return;
+  }
+  const idStr = prompt('Inner diameter (lumen) in mm — optional, for viz', '');
+  const idMm = idStr ? parseFloat(idStr) : (proxOdMm * 0.6); // reasonable default for viz
+
+  const company = prompt('Manufacturer / label (optional)', 'Custom');
+
+  const customs = getCustomDevices();
+  // Prevent duplicate names
+  if (customs.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+    alert('A custom device with that name already exists locally.');
+    return;
+  }
+
+  customs.push({
+    name: name.trim(),
+    company: company || 'Custom',
+    proxOdMm: proxOdMm,
+    distOdMm: null,
+    idMm: isNaN(idMm) ? (proxOdMm * 0.6) : idMm,
+    lengthCm: null,
+    notes: 'User-added local device (not from manufacturer data)'
+  });
+
+  saveCustomDevices(customs);
+
+  // Immediately reflect in current UI
+  const status = document.getElementById('fast-share-status');
+  if (status) {
+    status.textContent = 'Custom device added';
+    status.classList.add('show');
+    setTimeout(() => { status.classList.remove('show'); status.textContent = ''; }, 1400);
+  }
+
+  // If Fast tab has nothing selected yet, auto-select the new one in slot 1 for convenience
+  const m1 = document.getElementById('micro-1');
+  if (m1 && !m1.value) {
+    m1.value = `customDevices:${name.trim()}`;
+    updateFastView();
+  }
+}
+
+function syncURLState() {
+  // Update the browser URL (no reload) so the current selections are shareable
+  const params = new URLSearchParams();
+
+  const activeTab = document.querySelector('.tab.active')?.dataset.tab || 'fast';
+  params.set('tab', activeTab);
+
+  if (activeTab === 'fast') {
+    const inners = [1, 2, 3]
+      .map(n => {
+        const v = document.getElementById(`micro-${n}`)?.value || '';
+        if (!v) return null;
+        const [, name] = v.split(':');
+        return name;
+      })
+      .filter(Boolean);
+
+    if (inners.length) params.set('inners', encodeInners(inners));
+  } else if (activeTab === 'detail') {
+    const accessVal = document.getElementById('detail-access')?.value || '';
+    const microVal  = document.getElementById('detail-micro')?.value || '';
+    const microVal2 = document.getElementById('detail-micro-2')?.value || '';
+
+    if (accessVal) {
+      // store as category:name (stable)
+      params.set('access', accessVal);
+    }
+    if (microVal) {
+      const [, name] = microVal.split(':');
+      if (name) params.set('inner', encodeURIComponent(name));
+    }
+    if (microVal2) {
+      const [, name] = microVal2.split(':');
+      if (name) params.set('inner2', encodeURIComponent(name));
+    }
+  }
+
+  const newURL = location.pathname + '?' + params.toString() + location.hash;
+  history.replaceState(null, '', newURL);
+}
+
+function applyURLState() {
+  const params = new URLSearchParams(location.search);
+  const tab = params.get('tab') || 'fast';
+
+  // Switch to the requested tab first
+  if (tab === 'detail' || tab === 'all') {
+    switchTab(tab);
+  } else {
+    switchTab('fast');
+  }
+
+  if (tab === 'fast') {
+    const innerNames = decodeInners(params.get('inners') || '');
+    if (!innerNames.length) return;
+
+    const allInners = getAllInners();
+
+    // Map names back to select values like "microCatheters:Headway DUO"
+    [1, 2, 3].forEach((n, idx) => {
+      const name = innerNames[idx];
+      if (!name) return;
+      const found = allInners.find(c => c.name === name);
+      if (!found) return;
+
+      // Determine category key
+      let key = 'microCatheters';
+      if (data.dacCatheters.some(c => c.name === name)) key = 'dacCatheters';
+      else if (data.thrombectomyCatheters.some(c => c.name === name)) key = 'thrombectomyCatheters';
+
+      const select = document.getElementById(`micro-${n}`);
+      if (select) {
+        select.value = `${key}:${name}`;
+      }
+    });
+
+    updateFastView();
+  } else if (tab === 'detail') {
+    const accessParam = params.get('access');
+    const innerName   = params.get('inner') ? decodeURIComponent(params.get('inner')) : null;
+    const innerName2  = params.get('inner2') ? decodeURIComponent(params.get('inner2')) : null;
+
+    const allInners = getAllInners();
+
+    if (accessParam) {
+      const accessEl = document.getElementById('detail-access');
+      if (accessEl) accessEl.value = accessParam;
+    }
+    if (innerName) {
+      const found = allInners.find(c => c.name === innerName);
+      if (found) {
+        let key = 'microCatheters';
+        if (data.dacCatheters.some(c => c.name === innerName)) key = 'dacCatheters';
+        else if (data.thrombectomyCatheters.some(c => c.name === innerName)) key = 'thrombectomyCatheters';
+        const el = document.getElementById('detail-micro');
+        if (el) el.value = `${key}:${innerName}`;
+      }
+    }
+    if (innerName2) {
+      const found = allInners.find(c => c.name === innerName2);
+      if (found) {
+        let key = 'microCatheters';
+        if (data.dacCatheters.some(c => c.name === innerName2)) key = 'dacCatheters';
+        else if (data.thrombectomyCatheters.some(c => c.name === innerName2)) key = 'thrombectomyCatheters';
+        const el = document.getElementById('detail-micro-2');
+        if (el) el.value = `${key}:${innerName2}`;
+      }
+    }
+
+    updateDetailView();
+  }
+}
+
+/* ─── SAVED STACKS (localStorage) ────────────────────────────────────────────── */
+const SAVED_KEY = 'cathhub_saved_stacks';
+
+function loadSavedStacks() {
+  try {
+    return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
+  } catch { return []; }
+}
+
+function saveSavedStacks(list) {
+  localStorage.setItem(SAVED_KEY, JSON.stringify(list));
+}
+
+function renderSavedStacks() {
+  const wrap = document.getElementById('saved-stacks');
+  if (!wrap) return;
+  const stacks = loadSavedStacks();
+  if (!stacks.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <span class="saved-label">Saved:</span>
+    ${stacks.map(s => `
+      <span class="saved-chip" data-id="${s.id}">
+        ${s.name}
+        <span class="x" data-del="${s.id}" title="Delete">×</span>
+      </span>
+    `).join('')}
+  `;
+
+  // Load on click (but not on the X)
+  wrap.querySelectorAll('.saved-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      if (e.target.classList.contains('x')) return;
+      const id = chip.dataset.id;
+      const stack = stacks.find(x => x.id === id);
+      if (!stack || !stack.inners?.length) return;
+
+      const allInners = getAllInners();
+      [1,2,3].forEach(n => document.getElementById(`micro-${n}`).value = '');
+
+      stack.inners.forEach((name, i) => {
+        const slot = i + 1;
+        if (slot > 3) return;
+        const found = allInners.find(c => c.name === name);
+        if (!found) return;
+        let catKey = 'microCatheters';
+        if (data.dacCatheters.some(c => c.name === name)) catKey = 'dacCatheters';
+        else if (data.thrombectomyCatheters.some(c => c.name === name)) catKey = 'thrombectomyCatheters';
+        document.getElementById(`micro-${slot}`).value = `${catKey}:${name}`;
+      });
+      updateFastView();
+      switchTab('fast');
+    });
+  });
+
+  // Delete
+  wrap.querySelectorAll('.x').forEach(x => {
+    x.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = x.dataset.del;
+      const remaining = stacks.filter(s => s.id !== id);
+      saveSavedStacks(remaining);
+      renderSavedStacks();
+    });
+  });
+}
+
+function saveCurrentStack() {
+  const inners = [1,2,3].map(n => {
+    const v = document.getElementById(`micro-${n}`).value;
+    if (!v) return null;
+    const [, name] = v.split(':');
+    return name;
+  }).filter(Boolean);
+
+  if (!inners.length) {
+    const st = document.getElementById('fast-share-status');
+    if (st) {
+      st.textContent = 'Select at least one inner first';
+      st.classList.add('show');
+      setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 1400);
+    }
+    return;
+  }
+
+  const name = prompt('Name this stack (e.g. "My Sofia RED"):', inners.slice(0,2).join(' + ')) || inners.join(' + ');
+  const stacks = loadSavedStacks();
+  const id = 's_' + Date.now().toString(36);
+  stacks.unshift({ id, name: name.trim(), inners });
+  // Keep max 12
+  saveSavedStacks(stacks.slice(0, 12));
+  renderSavedStacks();
+
+  const st = document.getElementById('fast-share-status');
+  if (st) {
+    st.textContent = 'Saved!';
+    st.classList.add('show');
+    setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 1200);
+  }
+}
+
+/* ─── COPY REPORT ────────────────────────────────────────────────────────────── */
+function generateReportText(tab) {
+  const lines = [];
+  lines.push('CathHub Catheter Compatibility Report');
+  lines.push('Generated: ' + new Date().toLocaleString());
+  lines.push('');
+
+  if (tab === 'fast') {
+    const selected = [1,2,3].map(n => {
+      const v = document.getElementById(`micro-${n}`).value;
+      if (!v) return null;
+      const [,name] = v.split(':');
+      return name;
+    }).filter(Boolean);
+
+    if (!selected.length) return 'No selection.';
+
+    const totalOd = selected.reduce((sum, name) => {
+      const dev = getAllInners().find(c => c.name === name);
+      return sum + (dev ? dev.proxOdMm : 0);
+    }, 0);
+
+    lines.push('FAST CHECK');
+    lines.push('Inner catheters:');
+    selected.forEach((n, i) => lines.push(`  ${i+1}. ${n}`));
+    lines.push(`Combined proximal OD: ${totalOd.toFixed(2)} mm`);
+    lines.push('');
+
+    // Summarize top compatible
+    const combinedAccess = [
+      ...data.accessCatheters.map(c => ({ ...c, category: 'accessCatheters' })),
+      ...(data.balloonGuideCatheters || []).map(c => ({ ...c, category: 'balloonGuideCatheters', idMm: c.idMm || c.shaftOdMm }))
+    ];
+    const results = combinedAccess
+      .map(ac => ({ ...ac, clearance: (ac.idMm || 0) - totalOd }))
+      .filter(r => r.clearance >= 0)
+      .sort((a,b) => b.clearance - a.clearance)
+      .slice(0, 6);
+
+    lines.push('Top compatible access catheters:');
+    results.forEach(r => {
+      const sign = r.clearance >= 0 ? '+' : '';
+      lines.push(`  ${r.name} (${r.fr || ''}) — clearance ${sign}${r.clearance.toFixed(2)} mm`);
+    });
+    if (results.length === 0) lines.push('  (none fully compatible)');
+
+  } else if (tab === 'detail') {
+    const accessVal = document.getElementById('detail-access').value;
+    const microVal  = document.getElementById('detail-micro').value;
+    const microVal2 = document.getElementById('detail-micro-2').value;
+
+    if (accessVal) {
+      const [, name] = accessVal.split(':');
+      lines.push(`Access: ${name}`);
+    }
+    if (microVal) {
+      const [, name] = microVal.split(':');
+      lines.push(`Inner 1: ${name}`);
+    }
+    if (microVal2) {
+      const [, name] = microVal2.split(':');
+      lines.push(`Inner 2: ${name}`);
+    }
+
+    // Add the banner text if present
+    const banner = document.querySelector('#detail-result .compat-banner');
+    if (banner) {
+      const title = banner.querySelector('.compat-title')?.textContent || '';
+      const sub   = banner.querySelector('.compat-sub')?.textContent || '';
+      if (title) lines.push('');
+      if (title) lines.push(title);
+      if (sub) lines.push(sub);
+    }
+  }
+
+  lines.push('');
+  lines.push('— Generated by CathHub (cathhub.com) —');
+  lines.push('Data from manufacturer specs. Always verify with current IFU.');
+  return lines.join('\n');
+}
+
+function copyReport(tab) {
+  const text = generateReportText(tab);
+  navigator.clipboard.writeText(text).then(() => {
+    const statusEl = document.getElementById(tab === 'fast' ? 'fast-share-status' : 'detail-share-status');
+    if (statusEl) {
+      statusEl.textContent = 'Report copied!';
+      statusEl.classList.add('show');
+      setTimeout(() => {
+        statusEl.classList.remove('show');
+        statusEl.textContent = '';
+      }, 1600);
+    }
+  }).catch(() => {
+    // fallback
+    prompt('Copy this report:', text);
+  });
+}
+
 /* ─── POPULATE SELECTS ───────────────────────────────────────────────────────── */
 function populateSelects() {
   // Access catheter selects (including balloon guide catheters as access-like)
@@ -131,10 +586,53 @@ function renderThrombectomyTable() {
   `).join('');
 }
 
+/* ─── REFERENCE SEARCH STATE ───────────────────────────────────────────────── */
+let referenceFilter = '';
+
 /* ─── DYNAMIC CATEGORY RENDERING ─────────────────────────────────────────────── */
-function renderAllCategories() {
+function renderAllCategories(filter = '') {
   const container = document.getElementById('tab-all');
   container.innerHTML = ''; // Clear existing content
+
+  const q = (filter || referenceFilter || '').toLowerCase().trim();
+
+  // Search header (only once)
+  if (!container.querySelector('.ref-search-wrap')) {
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'ref-search-wrap section';
+    searchWrap.style.marginTop = '20px';
+    searchWrap.innerHTML = `
+      <div class="section-label">All Devices — live search</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input id="ref-search" type="search" placeholder="Search name, company, or size…" 
+               style="flex:1; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:14px;">
+        <button id="ref-clear" class="action-btn" style="padding:10px 14px;">Clear</button>
+      </div>
+    `;
+    container.appendChild(searchWrap);
+
+    // Wire once
+    setTimeout(() => {
+      const inp = document.getElementById('ref-search');
+      const clr = document.getElementById('ref-clear');
+      if (inp) {
+        inp.value = referenceFilter;
+        inp.addEventListener('input', () => {
+          referenceFilter = inp.value;
+          // Re-render with new filter (lightweight)
+          renderAllCategories(referenceFilter);
+        });
+      }
+      if (clr) {
+        clr.addEventListener('click', () => {
+          referenceFilter = '';
+          const i = document.getElementById('ref-search');
+          if (i) i.value = '';
+          renderAllCategories('');
+        });
+      }
+    }, 0);
+  }
 
   // Dynamically create sections for each category in data.js
   Object.keys(data).forEach((categoryKey, index) => {
@@ -195,7 +693,16 @@ function renderAllCategories() {
 
     // Table body
     const tbody = document.createElement('tbody');
-    categoryData.forEach(item => {
+    const filteredItems = q
+      ? categoryData.filter(item => {
+          const hay = `${item.name} ${item.company} ${item.fr || ''} ${item.notes || ''}`.toLowerCase();
+          return hay.includes(q);
+        })
+      : categoryData;
+
+    if (q && filteredItems.length === 0) return; // skip empty categories when filtering
+
+    filteredItems.forEach(item => {
       const row = document.createElement('tr');
       const cells = [
         `<strong>${item.name}</strong><br><span style="color:var(--muted);font-size:11px">${item.company}</span>`,
@@ -282,6 +789,9 @@ function switchTab(tab) {
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-selected', String(isActive));
   });
+
+  // Keep URL in sync when user manually switches tabs
+  syncURLState();
 }
 
 /* ─── FAST VIEW ──────────────────────────────────────────────────────────────── */
@@ -294,7 +804,7 @@ function updateFastView() {
     const clearEl = document.getElementById(`slot-clear-${n}`);
     const [catKey, microName] = select.value.split(':');
     const micro   = select.value
-      ? [...data.microCatheters, ...data.dacCatheters, ...data.thrombectomyCatheters].find(c => c.name === microName)
+      ? getAllInners().find(c => c.name === microName)
       : null;
 
     if (micro) {
@@ -324,8 +834,8 @@ function updateFastView() {
     return;
   }
 
-  // Gather selected inner catheters (micros + DACs + thrombectomy)
-  const allInner = [...data.microCatheters, ...data.dacCatheters, ...data.thrombectomyCatheters];
+  // Gather selected inner catheters (micros + DACs + thrombectomy + customs)
+  const allInner = getAllInners();
   const micros = [1, 2, 3]
     .map(n => {
       const val = document.getElementById(`micro-${n}`).value;
@@ -431,6 +941,7 @@ function updateFastView() {
   });
 
   el.innerHTML = summaryHtml + groupsHtml;
+  syncURLState();
 }
 
 function clearSlot(n) {
@@ -625,7 +1136,7 @@ function updateDetailView() {
     if (access && !access.idMm) access.idMm = access.shaftOdMm; // fallback if needed
   }
 
-  const allInner = [...data.microCatheters, ...data.dacCatheters, ...data.thrombectomyCatheters];
+  const allInner = getAllInners();
   const micro  = microName ? allInner.find(c => c.name === microName) : null;
   const [, microName2] = microVal2 ? microVal2.split(':') : ['', ''];
   const micro2 = microName2 ? allInner.find(c => c.name === microName2) : null;
@@ -731,6 +1242,7 @@ function updateDetailView() {
   }
 
   el.innerHTML = html;
+  syncURLState();
 }
 
 /* ─── EVENT LISTENERS ────────────────────────────────────────────────────────── */
@@ -766,12 +1278,152 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Set last-updated date
-  document.getElementById('last-updated').textContent = 'Updated Mar 2026';
+  document.getElementById('last-updated').textContent = 'Updated Jun 2026';
 
   // Initialise
   populateSelects();
+
+  // Inject any locally-saved custom devices into the selects immediately
+  refreshCustomInSelects();
+
   renderAllCategories(); // Dynamic render instead of static functions
   updateFastView();
+
+  // Apply any deep-link state from URL (after selects are populated)
+  applyURLState();
+
+  // Share buttons — copy current location (state is kept live in URL)
+  const fastShareBtn = document.getElementById('fast-share');
+  const fastShareStatus = document.getElementById('fast-share-status');
+  if (fastShareBtn) {
+    fastShareBtn.addEventListener('click', () => {
+      const url = location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        fastShareStatus.textContent = 'Link copied!';
+        fastShareStatus.classList.add('show');
+        setTimeout(() => {
+          fastShareStatus.classList.remove('show');
+          fastShareStatus.textContent = '';
+        }, 1500);
+      }).catch(() => {
+        prompt('Copy this link:', url);
+      });
+    });
+  }
+
+  // Save current combo
+  const fastSaveBtn = document.getElementById('fast-save');
+  if (fastSaveBtn) {
+    fastSaveBtn.addEventListener('click', saveCurrentStack);
+  }
+
+  // Initial render of any previously saved stacks
+  renderSavedStacks();
+
+  // Custom devices
+  const addCustomBtn = document.getElementById('add-custom-btn');
+  if (addCustomBtn) {
+    addCustomBtn.addEventListener('click', addCustomDevice);
+  }
+
+  const detailShareBtn = document.getElementById('detail-share');
+  const detailShareStatus = document.getElementById('detail-share-status');
+  if (detailShareBtn) {
+    detailShareBtn.addEventListener('click', () => {
+      const url = location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        detailShareStatus.textContent = 'Link copied!';
+        detailShareStatus.classList.add('show');
+        setTimeout(() => {
+          detailShareStatus.classList.remove('show');
+          detailShareStatus.textContent = '';
+        }, 1500);
+      }).catch(() => {
+        prompt('Copy this link:', url);
+      });
+    });
+  }
+
+  // Keyboard polish: "/" focuses reference search when on that tab; "?" shows help toast; Escape clears fast slots
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.getElementById('tab-all').style.display !== 'none') {
+      const inp = document.getElementById('ref-search');
+      if (inp) {
+        e.preventDefault();
+        inp.focus();
+        inp.select();
+      }
+    }
+    if (e.key.toLowerCase() === '?' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
+      e.preventDefault();
+      const st = document.getElementById('fast-share-status');
+      if (st) {
+        st.textContent = 'Tip: Use Share links, Saved stacks, and Custom devices';
+        st.classList.add('show');
+        setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 2200);
+      }
+    }
+    if (e.key === 'Escape') {
+      // Clear fast slots if any have value
+      let cleared = false;
+      [1,2,3].forEach(n => {
+        const s = document.getElementById(`micro-${n}`);
+        if (s && s.value) { s.value = ''; cleared = true; }
+      });
+      if (cleared) updateFastView();
+    }
+  });
+
+  // Bonus: clicking the status area can also copy a plain-text report
+  if (fastShareStatus) {
+    fastShareStatus.style.cursor = 'pointer';
+    fastShareStatus.addEventListener('click', () => copyReport('fast'));
+  }
+  if (detailShareStatus) {
+    detailShareStatus.style.cursor = 'pointer';
+    detailShareStatus.addEventListener('click', () => copyReport('detail'));
+  }
+
+  // Quick preset stacks for Fast Check
+  const PRESETS = {
+    'sofia-red': ['Sofia Flow 88', 'RED 72 Kit'],
+    'phenom-catalyst': ['Phenom 21', 'AXS Catalyst 5'],
+    'headway-trevo': ['Headway 21', 'Trevo Trak 21'],
+  };
+
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.preset;
+      const names = PRESETS[key] || [];
+      if (!names.length) return;
+
+      const allInners = getAllInners();
+      // Clear first
+      [1,2,3].forEach(n => { document.getElementById(`micro-${n}`).value = ''; });
+
+      names.forEach((name, i) => {
+        const slot = i + 1;
+        if (slot > 3) return;
+        const found = allInners.find(c => c.name === name);
+        if (!found) return;
+
+        let catKey = 'microCatheters';
+        if (data.dacCatheters.some(c => c.name === name)) catKey = 'dacCatheters';
+        else if (data.thrombectomyCatheters.some(c => c.name === name)) catKey = 'thrombectomyCatheters';
+
+        document.getElementById(`micro-${slot}`).value = `${catKey}:${name}`;
+      });
+
+      updateFastView();
+      // brief visual feedback on the button
+      btn.style.transition = 'none';
+      btn.style.transform = 'scale(0.96)';
+      setTimeout(() => {
+        btn.style.transition = '';
+        btn.style.transform = '';
+      }, 120);
+    });
+  });
 });
 
 /* ─── SPLASH SCREEN ──────────────────────────────────────────────────────────── */

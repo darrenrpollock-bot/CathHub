@@ -167,6 +167,38 @@
       </div>
     </div>
 
+    <!-- Fast Check actions (share + save) -->
+    <div class="fast-actions">
+      <button id="fast-share" class="action-btn" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        <span>Copy link</span>
+      </button>
+      <button id="fast-save" class="action-btn" type="button" title="Save current selection as a favorite stack">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        <span>Save combo</span>
+      </button>
+      <span id="fast-share-status" class="action-status"></span>
+    </div>
+
+    <!-- Quick preset stacks -->
+    <div class="preset-row" style="margin: 4px 0 10px;">
+      <span class="preset-label">Quick stacks:</span>
+      <button type="button" class="preset-btn" data-preset="sofia-red">Sofia + RED 72</button>
+      <button type="button" class="preset-btn" data-preset="phenom-catalyst">Phenom + Catalyst 5</button>
+      <button type="button" class="preset-btn" data-preset="headway-trevo">Headway + Trevo</button>
+    </div>
+
+    <!-- Saved stacks -->
+    <div id="saved-stacks" class="saved-stacks" style="margin-bottom:8px;"></div>
+
+    <!-- Custom devices (local only) -->
+    <div class="custom-devices" style="margin: 6px 0 12px;">
+      <button id="add-custom-btn" class="action-btn" type="button" style="padding:5px 10px;font-size:11px;">
+        ＋ Add custom inner (local)
+      </button>
+      <span id="custom-list" class="custom-list"></span>
+    </div>
+
     <div id="fast-result"></div>
 
   </div>
@@ -194,6 +226,15 @@
       <select id="detail-micro-2" aria-label="Select second inner catheter (optional)">
         <option value="">— Optional —</option>
       </select>
+    </div>
+
+    <!-- Detail actions -->
+    <div class="fast-actions" style="margin-top:-4px;margin-bottom:8px">
+      <button id="detail-share" class="action-btn" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        <span>Copy link</span>
+      </button>
+      <span id="detail-share-status" class="action-status"></span>
     </div>
 
     <div id="detail-result"></div>
