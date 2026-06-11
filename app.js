@@ -45,6 +45,36 @@ function decodeInners(str) {
   return str.split('|').map(s => decodeURIComponent(s)).filter(Boolean);
 }
 
+/* ─── RELIABLE CLIPBOARD COPY (works in more browsers / contexts) ─────────────── */
+function copyToClipboard(text) {
+  return new Promise((resolve, reject) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(resolve).catch(reject);
+    } else {
+      // Fallback for older browsers or non-secure contexts
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (successful) {
+          resolve();
+        } else {
+          reject(new Error('execCommand failed'));
+        }
+      } catch (err) {
+        reject(err);
+      }
+    }
+  });
+}
+
 function getAllInners() {
   const customs = getCustomDevices();
   return [...data.microCatheters, ...data.dacCatheters, ...data.thrombectomyCatheters, ...customs];
@@ -1297,15 +1327,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const fastShareStatus = document.getElementById('fast-share-status');
   if (fastShareBtn) {
     fastShareBtn.addEventListener('click', () => {
+      syncURLState(); // ensure latest selections are in the URL
       const url = location.href;
-      navigator.clipboard.writeText(url).then(() => {
-        fastShareStatus.textContent = 'Link copied!';
-        fastShareStatus.classList.add('show');
+
+      copyToClipboard(url).then(() => {
+        // Strong visual feedback on the button itself (much more noticeable)
+        const originalText = fastShareBtn.innerHTML;
+        fastShareBtn.style.transition = 'all 0.1s ease';
+        fastShareBtn.style.background = 'var(--green-bg)';
+        fastShareBtn.style.borderColor = 'var(--green-border)';
+        fastShareBtn.style.color = 'var(--green)';
+        fastShareBtn.innerHTML = `<span>Copied!</span>`;
+
         setTimeout(() => {
-          fastShareStatus.classList.remove('show');
-          fastShareStatus.textContent = '';
-        }, 1500);
+          fastShareBtn.innerHTML = originalText;
+          fastShareBtn.style.background = '';
+          fastShareBtn.style.borderColor = '';
+          fastShareBtn.style.color = '';
+        }, 1600);
       }).catch(() => {
+        // Last-resort fallback
         prompt('Copy this link:', url);
       });
     });
@@ -1330,15 +1371,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const detailShareStatus = document.getElementById('detail-share-status');
   if (detailShareBtn) {
     detailShareBtn.addEventListener('click', () => {
+      syncURLState(); // ensure latest selections are in the URL
       const url = location.href;
-      navigator.clipboard.writeText(url).then(() => {
-        detailShareStatus.textContent = 'Link copied!';
-        detailShareStatus.classList.add('show');
+
+      copyToClipboard(url).then(() => {
+        // Strong visual feedback on the button itself
+        const originalText = detailShareBtn.innerHTML;
+        detailShareBtn.style.transition = 'all 0.1s ease';
+        detailShareBtn.style.background = 'var(--green-bg)';
+        detailShareBtn.style.borderColor = 'var(--green-border)';
+        detailShareBtn.style.color = 'var(--green)';
+        detailShareBtn.innerHTML = `<span>Copied!</span>`;
+
         setTimeout(() => {
-          detailShareStatus.classList.remove('show');
-          detailShareStatus.textContent = '';
-        }, 1500);
+          detailShareBtn.innerHTML = originalText;
+          detailShareBtn.style.background = '';
+          detailShareBtn.style.borderColor = '';
+          detailShareBtn.style.color = '';
+        }, 1600);
       }).catch(() => {
+        // Last-resort fallback
         prompt('Copy this link:', url);
       });
     });

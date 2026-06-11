@@ -3,7 +3,7 @@
    Service Worker — offline-first PWA support
    ==================================================== */
 
-const CACHE_NAME = 'cathhub-v5';
+const CACHE_NAME = 'cathhub-v6';
 
 const STATIC_ASSETS = [
   '/',
