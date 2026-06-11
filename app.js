@@ -1629,10 +1629,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Quick preset stacks for Fast Check
+  // These are realistic combinations of inner catheters (micros + small DACs)
+  // chosen so that Fast Check actually shows interesting green/amber results.
+  //
+  // Previous presets included "Sofia Flow 88 + RED 72 Kit" (4.75mm combined!)
+  // and other large-bore devices that are not meant to be nested as inners.
+  // Those have been replaced.
   const PRESETS = {
-    'sofia-red': ['Sofia Flow 88', 'RED 72 Kit'],
-    'phenom-catalyst': ['Phenom 21', 'AXS Catalyst 5'],
-    'headway-trevo': ['Headway 21', 'Trevo Trak 21'],
+    'dual-micro': ['Headway DUO', 'Phenom 17'],           // 1.43mm — very small, green on nearly all 6F access
+    'delivery': ['Headway 21', 'Trevo Trak 21'],          // 1.72mm — common stent retriever delivery combo (tight on 6F, good on 8F)
+    'offset-micro': ['AXS Offset', 'Phenom 21'],          // 1.86mm — small DAC/support + micro (good example of mixed categories)
   };
 
   document.querySelectorAll('.preset-btn').forEach(btn => {
