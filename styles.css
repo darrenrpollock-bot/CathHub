@@ -782,6 +782,28 @@ select:focus {
   opacity: 1;
 }
 
+.saved-chip .stack-access {
+  font-size: 10px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Save stack icon in Fast results table */
+#fast-result .save-stack-btn {
+  opacity: 0.6;
+  transition: all 0.1s ease;
+}
+#fast-result .save-stack-btn:hover {
+  opacity: 1;
+  color: var(--accent);
+  transform: scale(1.1);
+}
+
 /* Custom devices */
 .custom-list {
   margin-left: 8px;

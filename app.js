@@ -340,12 +340,19 @@ function renderSavedStacks() {
 
   wrap.innerHTML = `
     <span class="saved-label">Saved:</span>
-    ${stacks.map(s => `
-      <span class="saved-chip" data-id="${s.id}">
-        ${s.name}
-        <span class="x" data-del="${s.id}" title="Delete">×</span>
-      </span>
-    `).join('')}
+    ${stacks.map(s => {
+      let accessLabel = '';
+      if (s.access) {
+        const [, accName] = s.access.split(':');
+        accessLabel = `<span class="stack-access" title="Includes ${accName}">+ ${accName}</span>`;
+      }
+      return `
+        <span class="saved-chip" data-id="${s.id}">
+          ${s.name}${accessLabel}
+          <span class="x" data-del="${s.id}" title="Delete">×</span>
+        </span>
+      `;
+    }).join('')}
   `;
 
   // Load on click (but not on the X)
@@ -370,7 +377,32 @@ function renderSavedStacks() {
         document.getElementById(`micro-${slot}`).value = `${catKey}:${name}`;
       });
       updateFastView();
-      switchTab('fast');
+
+      if (stack.access) {
+        // Load full stack into Detail View for the complete combo
+        const detailAccess = document.getElementById('detail-access');
+        const detailMicro = document.getElementById('detail-micro');
+        const detailMicro2 = document.getElementById('detail-micro-2');
+
+        if (detailAccess) detailAccess.value = stack.access;
+
+        // Load first two inners into detail selects
+        stack.inners.forEach((name, i) => {
+          if (i > 1) return;
+          const found = allInners.find(c => c.name === name);
+          if (!found) return;
+          let catKey = 'microCatheters';
+          if (data.dacCatheters.some(c => c.name === name)) catKey = 'dacCatheters';
+          else if (data.thrombectomyCatheters.some(c => c.name === name)) catKey = 'thrombectomyCatheters';
+          const target = i === 0 ? detailMicro : detailMicro2;
+          if (target) target.value = `${catKey}:${name}`;
+        });
+
+        switchTab('detail');
+        updateDetailView();
+      } else {
+        switchTab('fast');
+      }
     });
   });
 
@@ -386,15 +418,8 @@ function renderSavedStacks() {
   });
 }
 
-function saveCurrentStack() {
-  const inners = [1,2,3].map(n => {
-    const v = document.getElementById(`micro-${n}`).value;
-    if (!v) return null;
-    const [, name] = v.split(':');
-    return name;
-  }).filter(Boolean);
-
-  if (!inners.length) {
+function saveStack(inners, accessVal = null) {
+  if (!inners || !inners.length) {
     const st = document.getElementById('fast-share-status');
     if (st) {
       st.textContent = 'Select at least one inner first';
@@ -404,20 +429,41 @@ function saveCurrentStack() {
     return;
   }
 
-  const name = prompt('Name this stack (e.g. "My Sofia RED"):', inners.slice(0,2).join(' + ')) || inners.join(' + ');
+  let suggested = inners.slice(0, 2).join(' + ');
+  if (accessVal) {
+    const [, accName] = accessVal.split(':');
+    suggested = `${accName} + ${inners.slice(0,1).join('')}`;
+  }
+
+  const name = prompt('Name this stack:', suggested) || suggested;
   const stacks = loadSavedStacks();
   const id = 's_' + Date.now().toString(36);
-  stacks.unshift({ id, name: name.trim(), inners });
+  const stack = { id, name: name.trim(), inners };
+  if (accessVal) stack.access = accessVal;
+
+  stacks.unshift(stack);
   // Keep max 12
   saveSavedStacks(stacks.slice(0, 12));
   renderSavedStacks();
 
-  const st = document.getElementById('fast-share-status');
+  const st = document.getElementById('fast-share-status') || document.getElementById('detail-share-status');
   if (st) {
-    st.textContent = 'Saved!';
+    st.textContent = 'Saved full stack!';
     st.classList.add('show');
-    setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 1200);
+    setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 1400);
   }
+}
+
+function saveCurrentStack() {
+  // Called from Fast Check "Save combo" button — inners only
+  const inners = [1,2,3].map(n => {
+    const v = document.getElementById(`micro-${n}`).value;
+    if (!v) return null;
+    const [, name] = v.split(':');
+    return name;
+  }).filter(Boolean);
+
+  saveStack(inners, null);
 }
 
 /* ─── COPY REPORT ────────────────────────────────────────────────────────────── */
@@ -933,6 +979,7 @@ function updateFastView() {
     const rows = group.map(r => {
       const cls  = compatClass(r.clearance);
       const sign = r.clearance >= 0 ? '+' : '';
+      const accessVal = `${r.category || 'accessCatheters'}:${r.name}`;
       return `<tr>
         <td>
           <strong>${r.name}</strong><br>
@@ -941,6 +988,11 @@ function updateFastView() {
         <td style="text-align:center;font-feature-settings:'tnum' 1">${r.idMm ? r.idMm.toFixed(2) : (r.shaftOdMm || 0).toFixed(2)}</td>
         <td style="text-align:center">
           <span class="pill ${cls}">${sign}${r.clearance.toFixed(2)}</span>
+        </td>
+        <td style="text-align:center; width:28px;">
+          <button class="save-stack-btn" data-access="${accessVal}" title="Save this combo with ${r.name}" style="background:none; border:none; padding:2px; cursor:pointer; color:var(--muted);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+          </button>
         </td>
       </tr>`;
     }).join('');
@@ -961,6 +1013,7 @@ function updateFastView() {
                 <th>Access Catheter</th>
                 <th style="text-align:center">ID (mm)</th>
                 <th style="text-align:center">Clearance</th>
+                <th style="width:28px;"></th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -972,6 +1025,24 @@ function updateFastView() {
 
   el.innerHTML = summaryHtml + groupsHtml;
   syncURLState();
+
+  // Wire the per-access "save full stack" buttons (inners + this specific access)
+  document.querySelectorAll('#fast-result .save-stack-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const accessVal = btn.dataset.access;
+      const inners = [1,2,3].map(n => {
+        const v = document.getElementById(`micro-${n}`).value;
+        if (!v) return null;
+        const [, name] = v.split(':');
+        return name;
+      }).filter(Boolean);
+
+      if (inners.length && accessVal) {
+        saveStack(inners, accessVal);
+      }
+    });
+  });
 }
 
 function clearSlot(n) {
@@ -1356,6 +1427,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const fastSaveBtn = document.getElementById('fast-save');
   if (fastSaveBtn) {
     fastSaveBtn.addEventListener('click', saveCurrentStack);
+  }
+
+  // Save full combo from Detail View (access + inners)
+  const detailSaveBtn = document.getElementById('detail-save');
+  if (detailSaveBtn) {
+    detailSaveBtn.addEventListener('click', () => {
+      const accessVal = document.getElementById('detail-access').value;
+      const m1 = document.getElementById('detail-micro').value;
+      const m2 = document.getElementById('detail-micro-2').value;
+
+      const inners = [];
+      if (m1) {
+        const [, n] = m1.split(':');
+        if (n) inners.push(n);
+      }
+      if (m2) {
+        const [, n] = m2.split(':');
+        if (n) inners.push(n);
+      }
+
+      if (!inners.length || !accessVal) {
+        const st = document.getElementById('detail-share-status');
+        if (st) {
+          st.textContent = 'Select access + at least one inner';
+          st.classList.add('show');
+          setTimeout(() => { st.classList.remove('show'); st.textContent = ''; }, 1600);
+        }
+        return;
+      }
+
+      saveStack(inners, accessVal);
+    });
   }
 
   // Initial render of any previously saved stacks
