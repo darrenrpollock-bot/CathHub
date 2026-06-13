@@ -117,12 +117,39 @@ Optional fields for sponsorship / new launches:
 
 Do **not** edit `app.js`, `index.html`, or `styles.css` unless the instruction explicitly asks for a code change.
 
-## 6. Example Agent Prompt (for reference)
+## 6. Using the Agent Prompt Template
 
-When the human sends a photo + instruction, the ideal internal prompt for the agent should include:
-"Follow data-instructions.md exactly. The photo shows packaging for [device name]. [specific instruction, e.g. 'Add this device and make a new featured stack with it and Phenom 21']. Output only the minimal diffs or the exact new JSON objects."
+A ready-to-use prompt template is provided in `agent-prompt-template.txt`.
 
-This structured approach makes cheaper models (and future agents) far more reliable than loose "just update the app" instructions.
+Recommended workflow:
+1. Copy the entire contents of `agent-prompt-template.txt`.
+2. Paste it as the system / initial message to your agent (or prepend it to every Telegram message).
+3. Then add the specific user instruction + attach the photo(s).
+
+Example Telegram message:
+```
+[PASTE FULL CONTENT OF agent-prompt-template.txt HERE]
+
+User request: Photo of new [Device Name] packaging. Add the device and make a featured stack with it and Phenom 21 for the new launch.
+```
+
+This template strongly forces the agent to:
+- Read `data-instructions.md` first
+- Use strict photo-only extraction
+- Follow the exact output format
+- Ask for confirmation before committing
+
+The template was written to help cheaper / less consistent models (including current Grok) perform much better than loose "just update the app" instructions.
+
+## 7. Example of Loose vs Structured Instructions
+
+Loose (what you were doing):
+"Photo attached. Update the app."
+
+Structured (recommended):
+"Follow the full instructions in agent-prompt-template.txt and data-instructions.md. The photo shows [Device]. Add it with verified:true and set it as the new featured stack."
+
+This structured approach makes cheaper models (and future agents) far more reliable.
 
 ---
 
