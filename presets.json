@@ -1,0 +1,24 @@
+[
+  {
+    "key": "dual-micro",
+    "devices": ["Headway DUO", "Phenom 17"],
+    "label": "Headway DUO + Phenom 17",
+    "description": "Very small dual microcatheter stack. Combined OD ~1.43mm. Produces good clearance on most common 6F access catheters."
+  },
+  {
+    "key": "delivery",
+    "devices": ["Headway 21", "Trevo Trak 21"],
+    "label": "Headway 21 + Trevo Trak 21",
+    "description": "Common stent retriever delivery combination. Combined OD ~1.72mm. Tight on many 6F guides, good clearance on larger 8F access."
+  },
+  {
+    "key": "offset-micro",
+    "devices": ["AXS Offset", "Phenom 21"],
+    "label": "AXS Offset + Phenom 21",
+    "description": "Small support/DAC + microcatheter stack. Combined OD ~1.86mm. Useful mixed-category example.",
+    "featured": true,
+    "featuredLabel": "New",
+    "sponsor": "Stryker",
+    "notes": "Featured for new product launch example. Replace with real sponsor combo when a deal is active."
+  }
+]

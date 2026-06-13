@@ -3,7 +3,7 @@
    Service Worker — offline-first PWA support
    ==================================================== */
 
-const CACHE_NAME = 'cathhub-v6';
+const CACHE_NAME = 'cathhub-v7';
 
 const STATIC_ASSETS = [
   '/',
@@ -11,6 +11,7 @@ const STATIC_ASSETS = [
   '/styles.css',
   '/app.js',
   '/data.js',
+  '/presets.json',
   '/manifest.json',
   '/apple-touch-icon.png',
   '/icon-192.png',

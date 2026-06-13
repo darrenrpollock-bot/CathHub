@@ -1,3 +1,9 @@
+/* 
+  CathHub device database.
+  See data-instructions.md for exact rules when updating from photos.
+  Agents: only add fields and values directly visible on the provided packaging photo.
+*/
+
 const data = {
   accessCatheters: [
     { name: "Sophia 5",          company: "Microvention", fr: "5F",  odMm: 1.73, idMm: 1.40, idInch: 0.055, lengthCm: [115, 125] },

@@ -1635,21 +1635,32 @@ document.addEventListener('DOMContentLoaded', () => {
     detailShareStatus.addEventListener('click', () => copyReport('detail'));
   }
 
-  // Quick preset stacks for Fast Check
-  // These are realistic combinations of inner catheters (micros + small DACs)
-  // chosen so that Fast Check actually shows interesting green/amber results.
-  //
-  // Featured presets can be used for new product launches (useful reference for users)
-  // and can carry subtle sponsor attribution.
-  const PRESETS = [
-    { key: 'dual-micro', devices: ['Headway DUO', 'Phenom 17'], label: 'Headway DUO + Phenom 17' },
-    { key: 'delivery', devices: ['Headway 21', 'Trevo Trak 21'], label: 'Headway 21 + Trevo Trak 21' },
-    { key: 'offset-micro', devices: ['AXS Offset', 'Phenom 21'], label: 'AXS Offset + Phenom 21', featured: true, featuredLabel: 'New' },
-  ];
+  // Quick preset stacks are loaded from presets.json
+  // This makes it much easier for agents (and humans) to update featured stacks
+  // without touching app logic. See data-instructions.md for the exact format
+  // and update rules.
+  let PRESETS = [];
+
+  async function loadPresets() {
+    try {
+      const res = await fetch('/presets.json');
+      if (!res.ok) throw new Error('Failed to load presets.json');
+      PRESETS = await res.json();
+    } catch (err) {
+      console.warn('Could not load presets.json, falling back to empty', err);
+      PRESETS = [];
+    }
+    renderPresetButtons();
+  }
 
   function renderPresetButtons() {
     const container = document.getElementById('preset-buttons');
     if (!container) return;
+
+    if (!PRESETS.length) {
+      container.innerHTML = '<span style="color:var(--muted);font-size:11px">No presets configured</span>';
+      return;
+    }
 
     container.innerHTML = PRESETS.map(p => {
       const featuredClass = p.featured ? 'featured' : '';
@@ -1666,7 +1677,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.preset;
         const preset = PRESETS.find(p => p.key === key);
-        if (!preset || !preset.devices.length) return;
+        if (!preset || !preset.devices || !preset.devices.length) return;
 
         const allInners = getAllInners();
         // Clear first
@@ -1697,6 +1708,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  // Load presets from external JSON (much more agent-friendly than inline JS)
+  loadPresets();
 
   // Render presets (supports featured/sponsored new launch stacks)
   renderPresetButtons();
