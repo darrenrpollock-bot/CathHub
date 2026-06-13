@@ -732,6 +732,31 @@ select:focus {
   background: var(--accent-dim);
 }
 
+/* Subtle manufacturer verified badge */
+.verified-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Featured / new launch treatment for presets (subtle) */
+.preset-btn.featured {
+  border-color: var(--teal);
+  background: rgba(20, 184, 166, 0.08);
+}
+.preset-btn .featured-label {
+  font-size: 9px;
+  color: var(--teal);
+  margin-left: 4px;
+  font-weight: 700;
+}
+
 /* Saved stacks */
 .saved-stacks {
   display: flex;

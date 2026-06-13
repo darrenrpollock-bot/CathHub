@@ -862,8 +862,11 @@ function renderAllCategories(filter = '') {
 
     filteredItems.forEach(item => {
       const row = document.createElement('tr');
+      const verified = item.verified 
+        ? ` <span class="verified-badge" title="Manufacturer verified">✓ Verified</span>` 
+        : '';
       const cells = [
-        `<strong>${item.name}</strong><br><span style="color:var(--muted);font-size:11px">${item.company}</span>`,
+        `<strong>${item.name}</strong><br><span style="color:var(--muted);font-size:11px">${item.company}</span>${verified}`,
         item.company
       ];
 
@@ -1062,10 +1065,11 @@ function updateFastView() {
       const cls  = compatClass(r.clearance);
       const sign = r.clearance >= 0 ? '+' : '';
       const accessVal = `${r.category || 'accessCatheters'}:${r.name}`;
+      const rVerified = r.verified ? ` <span class="verified-badge" title="Manufacturer verified">✓</span>` : '';
       return `<tr>
         <td>
           <strong>${r.name}</strong><br>
-          <span style="color:var(--muted);font-size:11px">${r.company}</span>
+          <span style="color:var(--muted);font-size:11px">${r.company}</span>${rVerified}
         </td>
         <td style="text-align:center;font-feature-settings:'tnum' 1">${r.idMm ? r.idMm.toFixed(2) : (r.shaftOdMm || 0).toFixed(2)}</td>
         <td style="text-align:center">
@@ -1333,9 +1337,10 @@ function updateDetailView() {
 
   // Access catheter specs (or balloon guide)
   if (access) {
+    const accessVerified = access.verified ? ` <span class="verified-badge" title="Manufacturer verified">✓ Verified</span>` : '';
     html += `
       <div class="section" style="margin-top:16px">
-        <div class="section-label">${access.name} · ${access.company}</div>
+        <div class="section-label">${access.name} · ${access.company}${accessVerified}</div>
         <div class="spec-grid">
           <div class="spec-cell">
             <div class="spec-label">French Size</div>
@@ -1360,9 +1365,10 @@ function updateDetailView() {
 
   // Inner catheter specs
   if (micro) {
+    const microVerified = micro.verified ? ` <span class="verified-badge" title="Manufacturer verified">✓ Verified</span>` : '';
     html += `
       <div class="section" style="margin-top:16px">
-        <div class="section-label">${micro.name} · ${micro.company}</div>
+        <div class="section-label">${micro.name} · ${micro.company}${microVerified}</div>
         <div class="spec-grid">
           <div class="spec-cell primary">
             <div class="spec-label">Proximal OD</div>
@@ -1382,9 +1388,10 @@ function updateDetailView() {
   }
 
   if (micro2) {
+    const micro2Verified = micro2.verified ? ` <span class="verified-badge" title="Manufacturer verified">✓ Verified</span>` : '';
     html += `
       <div class="section" style="margin-top:16px">
-        <div class="section-label">${micro2.name} · ${micro2.company}</div>
+        <div class="section-label">${micro2.name} · ${micro2.company}${micro2Verified}</div>
         <div class="spec-grid">
           <div class="spec-cell primary">
             <div class="spec-label">Proximal OD</div>
@@ -1632,48 +1639,67 @@ document.addEventListener('DOMContentLoaded', () => {
   // These are realistic combinations of inner catheters (micros + small DACs)
   // chosen so that Fast Check actually shows interesting green/amber results.
   //
-  // Previous presets included "Sofia Flow 88 + RED 72 Kit" (4.75mm combined!)
-  // and other large-bore devices that are not meant to be nested as inners.
-  // Those have been replaced.
-  const PRESETS = {
-    'dual-micro': ['Headway DUO', 'Phenom 17'],           // 1.43mm — very small, green on nearly all 6F access
-    'delivery': ['Headway 21', 'Trevo Trak 21'],          // 1.72mm — common stent retriever delivery combo (tight on 6F, good on 8F)
-    'offset-micro': ['AXS Offset', 'Phenom 21'],          // 1.86mm — small DAC/support + micro (good example of mixed categories)
-  };
+  // Featured presets can be used for new product launches (useful reference for users)
+  // and can carry subtle sponsor attribution.
+  const PRESETS = [
+    { key: 'dual-micro', devices: ['Headway DUO', 'Phenom 17'], label: 'Headway DUO + Phenom 17' },
+    { key: 'delivery', devices: ['Headway 21', 'Trevo Trak 21'], label: 'Headway 21 + Trevo Trak 21' },
+    { key: 'offset-micro', devices: ['AXS Offset', 'Phenom 21'], label: 'AXS Offset + Phenom 21', featured: true, featuredLabel: 'New' },
+  ];
 
-  document.querySelectorAll('.preset-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.preset;
-      const names = PRESETS[key] || [];
-      if (!names.length) return;
+  function renderPresetButtons() {
+    const container = document.getElementById('preset-buttons');
+    if (!container) return;
 
-      const allInners = getAllInners();
-      // Clear first
-      [1,2,3].forEach(n => { document.getElementById(`micro-${n}`).value = ''; });
+    container.innerHTML = PRESETS.map(p => {
+      const featuredClass = p.featured ? 'featured' : '';
+      const featuredHtml = p.featured && p.featuredLabel 
+        ? `<span class="featured-label">${p.featuredLabel}</span>` 
+        : '';
+      return `<button type="button" class="preset-btn ${featuredClass}" data-preset="${p.key}">
+        ${p.label}${featuredHtml}
+      </button>`;
+    }).join('');
 
-      names.forEach((name, i) => {
-        const slot = i + 1;
-        if (slot > 3) return;
-        const found = allInners.find(c => c.name === name);
-        if (!found) return;
+    // Attach click handlers
+    container.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.preset;
+        const preset = PRESETS.find(p => p.key === key);
+        if (!preset || !preset.devices.length) return;
 
-        let catKey = 'microCatheters';
-        if (data.dacCatheters.some(c => c.name === name)) catKey = 'dacCatheters';
-        else if (data.thrombectomyCatheters.some(c => c.name === name)) catKey = 'thrombectomyCatheters';
+        const allInners = getAllInners();
+        // Clear first
+        [1,2,3].forEach(n => { document.getElementById(`micro-${n}`).value = ''; });
 
-        document.getElementById(`micro-${slot}`).value = `${catKey}:${name}`;
+        preset.devices.forEach((name, i) => {
+          const slot = i + 1;
+          if (slot > 3) return;
+          const found = allInners.find(c => c.name === name);
+          if (!found) return;
+
+          let catKey = 'microCatheters';
+          if (data.dacCatheters.some(c => c.name === name)) catKey = 'dacCatheters';
+          else if (data.thrombectomyCatheters.some(c => c.name === name)) catKey = 'thrombectomyCatheters';
+
+          document.getElementById(`micro-${slot}`).value = `${catKey}:${name}`;
+        });
+
+        updateFastView();
+
+        // brief visual feedback on the button
+        btn.style.transition = 'none';
+        btn.style.transform = 'scale(0.96)';
+        setTimeout(() => {
+          btn.style.transition = '';
+          btn.style.transform = '';
+        }, 120);
       });
-
-      updateFastView();
-      // brief visual feedback on the button
-      btn.style.transition = 'none';
-      btn.style.transform = 'scale(0.96)';
-      setTimeout(() => {
-        btn.style.transition = '';
-        btn.style.transform = '';
-      }, 120);
     });
-  });
+  }
+
+  // Render presets (supports featured/sponsored new launch stacks)
+  renderPresetButtons();
 });
 
 /* ─── SPLASH SCREEN ──────────────────────────────────────────────────────────── */

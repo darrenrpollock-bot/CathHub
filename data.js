@@ -1,7 +1,7 @@
 const data = {
   accessCatheters: [
     { name: "Sophia 5",          company: "Microvention", fr: "5F",  odMm: 1.73, idMm: 1.40, idInch: 0.055, lengthCm: [115, 125] },
-    { name: "Neuron 070",        company: "Penumbra",  fr: "6F",  odMm: 1.98, idMm: 1.78, idInch: 0.070, lengthCm: [105, 120, 125, 130] },
+    { name: "Neuron 070",        company: "Penumbra",  fr: "6F",  odMm: 1.98, idMm: 1.78, idInch: 0.070, lengthCm: [105, 120, 125, 130], verified: true },
     { name: "Sophia 6",          company: "Microvention", fr: "6F",  odMm: 1.98, idMm: 1.78, idInch: 0.070, lengthCm: [115, 125, 131] },
     { name: "BENCHMARK 071",     company: "Penumbra",  fr: "6F",  odMm: 1.98, idMm: 1.80, idInch: 0.071, lengthCm: [80, 90, 100] },
     { name: "Envoy DA",          company: "Codman",    fr: "6F",  odMm: 1.98, idMm: 1.80, idInch: 0.071, lengthCm: [105] },
@@ -20,7 +20,7 @@ const data = {
 
   thrombectomyCatheters: [
     { name: "RED 43",            company: "Penumbra",  proxOdMm: 1.52, distOdMm: 1.09, idMm: 1.09, idInch: 0.043, lengthCm: [153, 160] },
-    { name: "RED 72 Kit",        company: "Penumbra",  fr: "6F", proxOdMm: 2.16, distOdMm: 1.83, idMm: 1.83, idInch: 0.072, lengthCm: [124, 132] },
+    { name: "RED 72 Kit",        company: "Penumbra",  fr: "6F", proxOdMm: 2.16, distOdMm: 1.83, idMm: 1.83, idInch: 0.072, lengthCm: [124, 132], verified: true },
     { name: "RED 78 Kit",        company: "Penumbra",  proxOdMm: 2.39, distOdMm: 1.98, idMm: 1.98, idInch: 0.078, lengthCm: [124, 132] },
     { name: "Sofia Flow 88",     company: "MicroVention", fr: "8F", proxOdMm: 2.59, distOdMm: 2.70, idMm: 2.24, idInch: 0.088, lengthCm: [115] },
     { name: "Raptor 071",        company: "Balt",          fr: "6F", proxOdMm: 2.11, idMm: 1.80, idInch: 0.071, lengthCm: [132] },
@@ -33,7 +33,7 @@ const data = {
     { name: "MIDWAY 62",         company: "Penumbra",  proxOdMm: 1.93, distOdMm: null, idMm: 1.57, idInch: 0.062, lengthCm: 115 },
     { name: "AXS Offset",        company: "Stryker",      proxOdMm: 1.00, distOdMm: 0.91, idMm: 1.30, idInch: 0.050, lengthCm: 150, notes: "Distal 2cm tip ID 0.021in/0.53mm; Delivery Assist Catheter" },
     { name: "Sofia DAC 125cm",   company: "MicroVention", fr: "5F", proxOdMm: 1.70, distOdMm: 1.70, idMm: 1.40, idInch: 0.055, lengthCm: 125, tipShape: "Straight" },
-    { name: "AXS Catalyst 5",    company: "Stryker",      proxOdMm: 1.86, distOdMm: 1.76, idMm: 1.47, idInch: 0.058, lengthCm: 132 },
+    { name: "AXS Catalyst 5",    company: "Stryker",      proxOdMm: 1.86, distOdMm: 1.76, idMm: 1.47, idInch: 0.058, lengthCm: 132, verified: true },
     { name: "AXS Catalyst 6",    company: "Stryker",      proxOdMm: 2.01, distOdMm: 1.81, idMm: 1.52, idInch: 0.060, lengthCm: 132 },
     { name: "Sofia EX",          company: "MicroVention", fr: "5F", proxOdMm: 1.70, distOdMm: 1.80, idMm: 1.47, idInch: 0.058, lengthCm: 115, tipShape: "Straight" },
     { name: "FreeClimb 54",      company: "Route 92 Medical", proxOdMm: 1.70, distOdMm: 1.20, idMm: 1.37, idInch: 0.054, lengthCm: 148, notes: "Kit includes Tenzing 5 inner support (OD 0.8mm, tip 0.4mm, 167cm)" },
@@ -61,7 +61,7 @@ const data = {
     { name: "Trevo Trak 21",     company: "Stryker",      proxOdMm: 0.89, distOdMm: 0.79, idMm: 0.53, idInch: 0.021, lengthCm: 162 },
     { name: "Velocity STR",      company: "Penumbra",     proxOdMm: 0.98, distOdMm: 0.87, idMm: 0.64, idInch: 0.025, lengthCm: 160, tipShape: "Straight" },
     { name: "Phenom 17",         company: "Medtronic",    proxOdMm: 0.74, distOdMm: 0.61, idMm: 0.43, idInch: 0.017, lengthCm: 150 },
-    { name: "Phenom 21",         company: "Medtronic",    proxOdMm: 0.86, distOdMm: 0.76, idMm: 0.53, idInch: 0.021, lengthCm: 160 },
+    { name: "Phenom 21",         company: "Medtronic",    proxOdMm: 0.86, distOdMm: 0.76, idMm: 0.53, idInch: 0.021, lengthCm: 160, verified: true },
     { name: "Phenom 27",         company: "Medtronic",    proxOdMm: 1.02, distOdMm: 0.91, idMm: 0.69, idInch: 0.027, lengthCm: 150 },
   ]
 };
