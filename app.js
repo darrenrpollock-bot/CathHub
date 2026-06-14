@@ -238,6 +238,10 @@ function syncURLState() {
       const [, name] = microVal2.split(':');
       if (name) params.set('inner2', encodeURIComponent(name));
     }
+    // Persist triaxial (nested) mode for shareable links
+    if (microVal2 && getDetailTriaxialMode()) {
+      params.set('triax', '1');
+    }
   }
 
   const newURL = location.pathname + '?' + params.toString() + location.hash;
@@ -310,6 +314,12 @@ function applyURLState() {
         const el = document.getElementById('detail-micro-2');
         if (el) el.value = `${key}:${innerName2}`;
       }
+    }
+
+    // Restore triaxial toggle state from URL (must happen before updateDetailView)
+    const triaxParam = params.get('triax');
+    if (triaxParam === '1' && document.getElementById('detail-micro-2')?.value) {
+      setDetailTriaxialMode(true);
     }
 
     updateDetailView();
@@ -398,6 +408,10 @@ function renderSavedStacks() {
           if (target) target.value = `${catKey}:${name}`;
         });
 
+        if (stack.triaxial) {
+          setDetailTriaxialMode(true);
+        }
+
         switchTab('detail');
         updateDetailView();
       } else {
@@ -440,6 +454,9 @@ function saveStack(inners, accessVal = null) {
   const id = 's_' + Date.now().toString(36);
   const stack = { id, name: name.trim(), inners };
   if (accessVal) stack.access = accessVal;
+  if (accessVal && getDetailTriaxialMode()) {
+    stack.triaxial = true;
+  }
 
   stacks.unshift(stack);
   // Keep max 12
@@ -610,6 +627,8 @@ function generateReportText(tab) {
     if (microVal2) {
       const [, name] = microVal2.split(':');
       lines.push(`Inner 2: ${name}`);
+      const triax = getDetailTriaxialMode();
+      lines.push(`Configuration: ${triax ? 'Triaxial (nested)' : 'Side by side (parallel)'}`);
     }
 
     // Add the banner text if present
@@ -1137,7 +1156,7 @@ function clearSlot(n) {
 }
 
 /* ─── LUMEN VISUALIZATION ────────────────────────────────────────────────────── */
-function renderLumenViz(access, micro, micro2 = null) {
+function renderLumenViz(access, micro, micro2 = null, triaxial = false) {
   const SIZE    = 200;
   const C       = SIZE / 2; // center = 100
   const MAX_R   = 88;       // max radius in SVG units
@@ -1147,16 +1166,89 @@ function renderLumenViz(access, micro, micro2 = null) {
   const accessOdR = (access.odMm ? (access.odMm / 2) : (access.proxOdMm || access.shaftOdMm || 0) / 2) * SCALE;
   const accessIdR = ((access.idMm || access.shaftOdMm || 0) / 2) * SCALE;
 
+  const COLOR1 = '#14b8a6'; // teal — outer inner (micro 1)
+  const COLOR2 = '#818cf8'; // indigo — inner-most (micro 2)
+
   if (micro2) {
-    // ── Dual micro layout ──────────────────────────────────────────────────
-    // Place two circles side-by-side, tangent, with their combined bounding
-    // box centred on C.  Bounding radius = r1 + r2, so clearance in mm is:
-    //   access.idMm - (micro1.proxOdMm + micro2.proxOdMm)
     const r1   = (micro.proxOdMm  / 2) * SCALE;
     const r1Id = (micro.idMm      / 2) * SCALE;
     const r2   = (micro2.proxOdMm / 2) * SCALE;
     const r2Id = (micro2.idMm     / 2) * SCALE;
 
+    if (triaxial) {
+      // ── TRIAXIAL (nested / coaxial) layout ───────────────────────────────
+      // All three circles concentric. Micro 2 sits inside Micro 1's lumen.
+      // Access clearance is based on the *outer* of the two inners (micro 1).
+      const accessClearance = (access.idMm || 0) - micro.proxOdMm;
+      const cls       = compatClass(accessClearance);
+      const gapColor  = cls === 'green' ? '#10b981' : cls === 'amber' ? '#f59e0b' : '#ef4444';
+
+      return `
+      <div class="lumen-viz-wrapper">
+        <div class="lumen-viz-label">Cross-section view — triaxial (nested)</div>
+        <svg class="lumen-viz" viewBox="0 0 ${SIZE} ${SIZE}" xmlns="http://www.w3.org/2000/svg"
+             role="img" aria-label="Triaxial lumen cross-section: ${access.name} with ${micro.name} containing ${micro2.name}">
+
+          <!-- Outer ambient glow (based on access fit) -->
+          <circle cx="${C}" cy="${C}" r="${accessOdR + 10}"
+                  fill="none" stroke="${gapColor}" stroke-width="1" opacity="0.06"/>
+
+          <!-- Access catheter wall (OD) -->
+          <circle cx="${C}" cy="${C}" r="${accessOdR}"
+                  fill="#1a2236" stroke="#1e3a5f" stroke-width="1.5"/>
+
+          <!-- Access lumen (ID) — fill colored by access-to-outer-inner clearance -->
+          <circle cx="${C}" cy="${C}" r="${accessIdR}"
+                  fill="${gapColor}" fill-opacity="0.18"/>
+
+          <!-- Micro 1 (outer inner) wall -->
+          <circle cx="${C}" cy="${C}" r="${r1}"
+                  fill="${COLOR1}" fill-opacity="0.55"
+                  stroke="${COLOR1}" stroke-width="1.5"/>
+
+          <!-- Micro 1 lumen (space for inner catheter) -->
+          <circle cx="${C}" cy="${C}" r="${r1Id}"
+                  fill="#090d14" fill-opacity="0.75"/>
+
+          <!-- Micro 2 (inner-most) outer -->
+          <circle cx="${C}" cy="${C}" r="${r2}"
+                  fill="${COLOR2}" fill-opacity="0.65"
+                  stroke="${COLOR2}" stroke-width="1.5"/>
+
+          <!-- Micro 2 inner lumen (working channel) -->
+          <circle cx="${C}" cy="${C}" r="${r2Id}"
+                  fill="#090d14" fill-opacity="0.7"/>
+
+          <!-- Access ID dashed boundary ring -->
+          <circle cx="${C}" cy="${C}" r="${accessIdR}"
+                  fill="none" stroke="#0ea5e9" stroke-width="1"
+                  stroke-dasharray="4 3" opacity="0.45"/>
+        </svg>
+
+        <div class="lumen-viz-dims">
+          <div class="dim-item">
+            <span class="dim-swatch" style="border: 2px dashed #0ea5e9; opacity: 0.6;"></span>
+            <span class="dim-key">Access ID</span>
+            <span class="dim-val">${access.idMm.toFixed(2)}</span>
+            <span class="dim-unit">mm</span>
+          </div>
+          <div class="dim-item">
+            <span class="dim-swatch" style="background: ${COLOR1}; opacity: 0.65;"></span>
+            <span class="dim-key">Micro 1 OD (outer)</span>
+            <span class="dim-val">${micro.proxOdMm.toFixed(2)}</span>
+            <span class="dim-unit">mm</span>
+          </div>
+          <div class="dim-item">
+            <span class="dim-swatch" style="background: ${COLOR2}; opacity: 0.65;"></span>
+            <span class="dim-key">Micro 2 OD (inner)</span>
+            <span class="dim-val">${micro2.proxOdMm.toFixed(2)}</span>
+            <span class="dim-unit">mm</span>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ── Dual micro layout (parallel / side-by-side) — original behavior ────
     // Centers: c1 = C − r2,  c2 = C + r1  (they touch at C + (r1−r2))
     const c1x = C - r2;
     const c2x = C + r1;
@@ -1164,9 +1256,6 @@ function renderLumenViz(access, micro, micro2 = null) {
     const clearance = access.idMm - micro.proxOdMm - micro2.proxOdMm;
     const cls       = compatClass(clearance);
     const gapColor  = cls === 'green' ? '#10b981' : cls === 'amber' ? '#f59e0b' : '#ef4444';
-
-    const COLOR1 = '#10b981'; // teal  — micro 1
-    const COLOR2 = '#818cf8'; // indigo — micro 2
 
     return `
     <div class="lumen-viz-wrapper">
@@ -1299,6 +1388,26 @@ function renderLumenViz(access, micro, micro2 = null) {
     </div>`;
 }
 
+/* ─── TRIAXIAL TOGGLE HELPERS (Detail View only) ─────────────────────────────── */
+function getDetailTriaxialMode() {
+  const wrap = document.getElementById('detail-triax-wrap');
+  if (!wrap) return false;
+  const activeBtn = wrap.querySelector('.triax-btn.active');
+  return !!(activeBtn && activeBtn.dataset.mode === 'triaxial');
+}
+
+function setDetailTriaxialMode(isTriaxial) {
+  const wrap = document.getElementById('detail-triax-wrap');
+  if (!wrap) return;
+
+  const btns = wrap.querySelectorAll('.triax-btn');
+  btns.forEach(btn => {
+    const on = (btn.dataset.mode === 'triaxial') === !!isTriaxial;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  });
+}
+
 /* ─── DETAIL VIEW ────────────────────────────────────────────────────────────── */
 function updateDetailView() {
   const accessVal  = document.getElementById('detail-access').value;
@@ -1328,11 +1437,24 @@ function updateDetailView() {
   const [, microName2] = microVal2 ? microVal2.split(':') : ['', ''];
   const micro2 = microName2 ? allInner.find(c => c.name === microName2) : null;
 
+  // Show/hide triaxial toggle only when a 2nd inner is selected
+  const triaxWrap = document.getElementById('detail-triax-wrap');
+  if (triaxWrap) {
+    const shouldShow = !!micro2;
+    triaxWrap.style.display = shouldShow ? 'block' : 'none';
+    if (!shouldShow) {
+      // Reset to parallel when 2nd inner is removed
+      setDetailTriaxialMode(false);
+    }
+  }
+
+  const triaxial = !!(micro2 && getDetailTriaxialMode());
+
   let html = '';
 
   // Lumen visualization — only when both access and at least one micro are selected
   if (access && micro) {
-    html += renderLumenViz(access, micro, micro2 || null);
+    html += renderLumenViz(access, micro, micro2 || null, triaxial);
   }
 
   // Access catheter specs (or balloon guide)
@@ -1412,20 +1534,40 @@ function updateDetailView() {
   // Compatibility banner — only when both access and micro are selected
   if (access && micro) {
     const accessId = access.idMm || access.shaftOdMm || 0;
-    const clearance = micro2
-      ? accessId - micro.proxOdMm - micro2.proxOdMm
-      : accessId - micro.proxOdMm;
-    const cls = compatClass(clearance);
-    const lbl = compatLabel(clearance);
-    const sign = clearance >= 0 ? '+' : '';
-    const subtitle = micro2
-      ? `Combined OD ${(micro.proxOdMm + micro2.proxOdMm).toFixed(2)} mm · ${lbl.sub}`
-      : lbl.sub;
+
+    // Compute the clearance that matters for the *access* catheter
+    const accessClearance = (micro2 && triaxial)
+      ? accessId - micro.proxOdMm                  // triaxial: only outer inner OD counts
+      : micro2
+        ? accessId - micro.proxOdMm - micro2.proxOdMm
+        : accessId - micro.proxOdMm;
+
+    const cls = compatClass(accessClearance);
+    const lbl = compatLabel(accessClearance);
+    const sign = accessClearance >= 0 ? '+' : '';
+
+    let subtitle;
+    if (micro2 && triaxial) {
+      // Also report how the inner-most device fits inside the first inner's lumen
+      const innerClear = (micro.idMm || 0) - micro2.proxOdMm;
+      const innerSign = innerClear >= 0 ? '+' : '';
+      const innerWord = innerClear >= 0.10 ? 'good' : (innerClear >= 0 ? 'tight' : 'incompatible');
+      subtitle = `Outer OD ${micro.proxOdMm.toFixed(2)} mm · ${lbl.sub} · inner lumen ${innerSign}${innerClear.toFixed(2)} mm (${innerWord})`;
+    } else if (micro2) {
+      subtitle = `Combined OD ${(micro.proxOdMm + micro2.proxOdMm).toFixed(2)} mm · ${lbl.sub}`;
+    } else {
+      subtitle = lbl.sub;
+    }
+
+    const titleText = (micro2 && triaxial)
+      ? `${lbl.text} (access) — clearance ${sign}${accessClearance.toFixed(2)} mm`
+      : `${lbl.text} — clearance ${sign}${accessClearance.toFixed(2)} mm`;
+
     html += `
       <div class="compat-banner ${cls}">
         <div class="compat-icon">${lbl.icon}</div>
         <div>
-          <div class="compat-title">${lbl.text} — clearance ${sign}${clearance.toFixed(2)} mm</div>
+          <div class="compat-title">${titleText}</div>
           <div class="compat-sub">${subtitle}</div>
         </div>
       </div>`;
@@ -1455,6 +1597,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('detail-access').addEventListener('change', updateDetailView);
   document.getElementById('detail-micro').addEventListener('change', updateDetailView);
   document.getElementById('detail-micro-2').addEventListener('change', updateDetailView);
+
+  // Triaxial configuration toggle (segmented buttons)
+  document.querySelectorAll('#detail-triax-wrap .triax-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isTri = btn.dataset.mode === 'triaxial';
+      setDetailTriaxialMode(isTri);
+      updateDetailView();
+    });
+  });
 
   // Reference tab filter pills
   document.querySelectorAll('.filter-pill').forEach(btn => {

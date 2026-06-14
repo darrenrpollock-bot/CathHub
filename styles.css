@@ -699,6 +699,52 @@ select:focus {
   opacity: 1;
 }
 
+/* ─── TRIAXIAL / PARALLEL TOGGLE (Detail View) ─────────────────────────────── */
+.triax-wrap {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px 8px;
+}
+.triax-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+}
+.triax-btn {
+  background: var(--surface);
+  color: var(--text2);
+  border: none;
+  border-right: 1px solid var(--border2);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+.triax-btn:last-child {
+  border-right: none;
+}
+.triax-btn:hover:not(.active) {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.triax-btn.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.triax-hint {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+  font-style: italic;
+}
+
 /* Quick preset stacks */
 .preset-row {
   display: flex;

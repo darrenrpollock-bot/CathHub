@@ -234,6 +234,16 @@
       </select>
     </div>
 
+    <!-- Triaxial / parallel toggle (only shown when 2nd inner is selected) -->
+    <div id="detail-triax-wrap" class="triax-wrap" style="display:none; margin: 4px 0 10px;">
+      <div class="section-label" style="margin-bottom:4px;">Inner configuration</div>
+      <div class="triax-toggle" role="group" aria-label="Choose inner catheter configuration">
+        <button type="button" class="triax-btn active" data-mode="parallel" aria-pressed="true">Side by side</button>
+        <button type="button" class="triax-btn" data-mode="triaxial" aria-pressed="false">Triaxial (nested)</button>
+      </div>
+      <div class="triax-hint">Triaxial: run the 2nd catheter inside the first inner</div>
+    </div>
+
     <!-- Detail actions -->
     <div class="fast-actions" style="margin-top:-4px;margin-bottom:8px">
       <button id="detail-share" class="action-btn" type="button">
