@@ -3,7 +3,7 @@
    Service Worker — offline-first PWA support
    ==================================================== */
 
-const CACHE_NAME = 'cathhub-v7';
+const CACHE_NAME = 'cathhub-v8';  // Bumped for triaxial feature + general updates. Old 'cathhub-v7' caches will be purged on activate.
 
 const STATIC_ASSETS = [
   '/',
